@@ -5,7 +5,7 @@
   "site": "https://open.noq.works/projects/sos/",
   "files": "https://open.noq.works/files/sos/",
   "next": {
-    "version": "0.2.0",
+    "version": "0.3.0",
     "items": [
       {
         "area": "hardware",
@@ -30,6 +30,49 @@
     ]
   },
   "releases": [
+    {
+      "version": "0.2.0",
+      "date": "2026-11-05",
+      "summary": {
+        "en": "Ask the pendant from Telegram: /status and /battery, in Turkish /durum and /pil.",
+        "tr": "Kolyeye Telegram'dan sor: /durum ve /pil, İngilizce /status ve /battery."
+      },
+      "changes": [
+        {
+          "area": "firmware",
+          "by": [
+            "Umut"
+          ],
+          "en": "Telegram commands in a private chat or a family group: /status, /battery, /help and in Turkish /durum, /pil, /yardim. The answer comes as a reply in the language of the command; only chats on the list get one.",
+          "tr": "Özel sohbette ya da aile grubunda Telegram komutları: /durum, /pil, /yardim ve İngilizce /status, /battery, /help. Cevap komuta yanıt olarak, komutun dilinde gelir; yalnız listedeki sohbetler cevap alır."
+        },
+        {
+          "area": "firmware",
+          "by": [
+            "Umut"
+          ],
+          "en": "Asleep, the pendant wakes every hour (or every 15 or 30 minutes, every 3 hours, or only on a press and the check-in) to answer waiting commands; awake, it answers at once.",
+          "tr": "Kolye uyurken saatte bir (ya da 15, 30 dakikada, 3 saatte bir ya da yalnız basınca ve yoklamada) uyanıp bekleyen komutları cevaplar; uyanıkken hemen cevaplar."
+        },
+        {
+          "area": "firmware",
+          "en": "The commands show up in Telegram's / menu, in Turkish for Turkish-language apps. A command already answered is not answered again after a power loss.",
+          "tr": "Komutlar Telegram'ın / menüsünde görünür, Türkçe uygulamada Türkçe. Cevaplanmış bir komut güç kesilince yeniden cevaplanmaz."
+        },
+        {
+          "area": "setup",
+          "en": "Pendant page: Telegram commands setting under Pendant; the bot's Connected reply names the commands.",
+          "tr": "Kolyenin sayfası: Kolye bölümünde Telegram komutları ayarı; botun Bağlandı yanıtı komutları söyler."
+        }
+      ],
+      "compatibility": {
+        "en": "Update over Wi-Fi from 0.1.0; the bot, the people and the settings stay. Checking for commands every hour uses more battery than the daily check-in alone. Battery reading still not tested and no case yet.",
+        "tr": "0.1.0'dan Wi-Fi üzerinden güncellenir; bot, kişiler ve ayarlar kalır. Saatte bir komutlara bakmak yalnız günlük yoklamadan daha çok pil harcar. Pil ölçümü hâlâ denenmedi, kutusu henüz yok."
+      },
+      "credits": [
+        "Umut"
+      ]
+    },
     {
       "version": "0.1.0",
       "date": "2026-11-05",

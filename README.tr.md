@@ -6,7 +6,7 @@ Tek düğmeli çağrı kolyesi. Basınca aileye Telegram'dan mesaj gider; mesaj�
 
 **Proje sayfası ve tarayıcıdan kurulum:** https://open.noq.works/tr/projeler/sos/ · [English](README.md)
 
-> **Deneme sürümü (0.1.0).** Masada çalışıyor: basış, Wi-Fi, Telegram. Pil ölçümü henüz denenmedi ve kutusu henüz yok; ikisi de 0.2.0'da.
+> **Deneme sürümü (0.2.0).** Masada çalışıyor: basış, Wi-Fi, Telegram, komutlar. Pil ölçümü henüz denenmedi ve kutusu henüz yok; ikisi de 0.3.0'da.
 
 ## Ne yapar
 
@@ -15,7 +15,8 @@ Tek düğmeli çağrı kolyesi. Basınca aileye Telegram'dan mesaj gider; mesaj�
 - **Pes etmez.** Gönderilemeyen bildirim (Wi-Fi ya da internet yok) saklanır; 1, 2, 5 dakika sonra, sonra 10 dakikada bir yeniden denenir, mesaj ne kadar geciktiğini yazar.
 - **Yaşadığını söyler.** İsteğe bağlı, seçilen saatte sessiz günlük yoklama; pil ölçümü takılıysa pil azaldı mesajı.
 - **Kendi sayfaları.** İlk açılışta `noq-sos-xxxxxx` ağı NOQ Open Wi-Fi kurulum sayfasıyla açılır; ev ağında kolye `http://noq-sos-xxxxxx.local` adresinde kendi sayfasını sunar: ad, bot, alıcılar, deneme mesajı.
-- **Katılmak bir dokunuş.** Kurulum açıkken botta *Başlat*'a dokunan (ya da botu bir gruba ekleyen) listeye girer ve "Bağlandı" yanıtı alır. Kurulum dışında kolye hiç dinlemez.
+- **Katılmak bir dokunuş.** Kurulum açıkken botta *Başlat*'a dokunan (ya da botu bir gruba ekleyen) listeye girer ve "Bağlandı" yanıtı alır. Kurulum dışında listeye kimse eklenmez.
+- **Telegram'dan sor.** `/durum`, `/pil`, `/yardim` ya da İngilizce `/status`, `/battery`, `/help`; özel sohbette ya da aile grubunda (orada `/durum@bot`, Telegram'ın `/` menüsü kendisi yazar). Cevap komuta yanıt olarak, komutun dilinde gelir; yalnız listedeki sohbetler cevap alır. Kolye uyanıksa hemen, uyuyorsa saatte bir uyanıp cevaplar (15 ya da 30 dakika, 3 saat ya da yalnız basınca ve yoklamada: sayfasında *Telegram komutları*).
 
 ## Depo
 
@@ -55,7 +56,7 @@ Pinleri dosyanın başındaki `substitutions` ile değiştir. Sonraki güncellem
 ### Uyanık ve uykuda
 
 - Güç verildikten, sıfırlandıktan ya da yüklendikten sonra 10 dakika; sayfası açıkken; bilgisayara takılıyken uyanık.
-- Geri kalan zaman uykuda. Basış, bekleyen bir yeniden deneme ya da günlük yoklama onu uyandırır.
+- Geri kalan zaman uykuda. Basış, bekleyen bir yeniden deneme, günlük yoklama ya da komut bakışı (varsayılan saatte bir) onu uyandırır.
 - Sonradan bir şey değiştirmek için: kartın RESET düğmesine bas (ya da bilgisayara tak) ve sayfasını aç.
 - Ağı değiştirmek: kolye sayfasında *Ağı değiştir*; Telegram ayarları kalır.
 

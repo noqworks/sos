@@ -6,7 +6,7 @@ A call pendant with one button. A press sends a Telegram message to the family, 
 
 **Project page and browser installer:** https://open.noq.works/projects/sos/ · [Türkçe](README.tr.md)
 
-> **Test build (0.1.0).** It works on the bench: press, Wi-Fi, Telegram. The battery reading is not tested yet and there is no case yet; both come in 0.2.0.
+> **Test build (0.2.0).** It works on the bench: press, Wi-Fi, Telegram, commands. The battery reading is not tested yet and there is no case yet; both come in 0.3.0.
 
 ## What it does
 
@@ -15,7 +15,8 @@ A call pendant with one button. A press sends a Telegram message to the family, 
 - **Does not give up.** An alert that cannot go out (no Wi-Fi, no internet) is kept and retried after 1, 2, 5 and then every 10 minutes; the message says how late it is.
 - **Says it is alive.** Optional silent daily check-in at a chosen hour, and a message when the battery runs low (with the battery reading fitted).
 - **Its own pages.** First power-on opens a `noq-sos-xxxxxx` network with the NOQ Open Wi-Fi setup page; on the home network the pendant serves its own page at `http://noq-sos-xxxxxx.local` for the name, the bot, the recipients and a test message.
-- **Joining is a tap.** While setup is open, anyone who taps *Start* in the bot (or adds it to a group) is on the list and gets a "Connected" reply. Outside setup the pendant does not listen at all.
+- **Joining is a tap.** While setup is open, anyone who taps *Start* in the bot (or adds it to a group) is on the list and gets a "Connected" reply. Outside setup nobody new is added.
+- **Ask it from Telegram.** `/status`, `/battery`, `/help`, or in Turkish `/durum`, `/pil`, `/yardim`, in a private chat or a family group (there `/durum@bot`, which Telegram's `/` menu fills in). The answer comes as a reply, in the language of the command; only chats on the list get one. Awake, the pendant answers at once; asleep, it wakes every hour to answer (15 or 30 minutes, 3 hours or only on a press and the check-in: *Telegram commands* on its page).
 
 ## Repository
 
@@ -55,7 +56,7 @@ Change pins with the `substitutions` at the top of the file. Later updates go ov
 ### Awake and asleep
 
 - Awake for 10 minutes after power-on, a reset or an install; while its page is open; while it is on a computer.
-- Asleep otherwise. A press, a pending retry or the daily check-in wakes it.
+- Asleep otherwise. A press, a pending retry, the daily check-in or the command check (every hour by default) wakes it.
 - To change something later: press the board's reset button (or plug it into a computer) and open its page.
 - Change network: *Change network* on the pendant's page; the Telegram settings stay.
 

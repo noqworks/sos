@@ -10,7 +10,7 @@ NOQ SOS için bütün değişiklikler, en yenisi üstte. Sürümler ANA.ARA.YAMA
 
 _`releases.json` dosyasından `tools/changelog.py` ile üretilir. Bu dosyayı değil, onu düzenle._
 
-## Sıradaki: 0.2.0
+## Sıradaki: 0.3.0
 
 Planlananlar; talep ve sorulardan. Önerin ya da takıldığın bir yer varsa: [konular](https://github.com/noqworks/sos/issues).
 
@@ -26,6 +26,24 @@ Planlananlar; talep ve sorulardan. Önerin ya da takıldığın bir yer varsa: [
 ### Belgeler
 
 - Yapım ve bitmiş kolye fotoğrafları.
+
+## 0.2.0 · 2026-11-05
+
+Kolyeye Telegram'dan sor: /durum ve /pil, İngilizce /status ve /battery.
+
+### Yazılım
+
+- Özel sohbette ya da aile grubunda Telegram komutları: /durum, /pil, /yardim ve İngilizce /status, /battery, /help. Cevap komuta yanıt olarak, komutun dilinde gelir; yalnız listedeki sohbetler cevap alır. (Umut)
+- Kolye uyurken saatte bir (ya da 15, 30 dakikada, 3 saatte bir ya da yalnız basınca ve yoklamada) uyanıp bekleyen komutları cevaplar; uyanıkken hemen cevaplar. (Umut)
+- Komutlar Telegram'ın / menüsünde görünür, Türkçe uygulamada Türkçe. Cevaplanmış bir komut güç kesilince yeniden cevaplanmaz.
+
+### Kurulum
+
+- Kolyenin sayfası: Kolye bölümünde Telegram komutları ayarı; botun Bağlandı yanıtı komutları söyler.
+
+**Uyumluluk:** 0.1.0'dan Wi-Fi üzerinden güncellenir; bot, kişiler ve ayarlar kalır. Saatte bir komutlara bakmak yalnız günlük yoklamadan daha çok pil harcar. Pil ölçümü hâlâ denenmedi, kutusu henüz yok.
+**Teşekkürler:** Umut
+**Dosyalar:** [kaynak ve baskı dosyaları (zip)](https://open.noq.works/files/sos/sos-0.2.0-source.zip) · [GitHub sürümü](https://github.com/noqworks/sos/releases/tag/v0.2.0)
 
 ## 0.1.0 · 2026-11-05
 

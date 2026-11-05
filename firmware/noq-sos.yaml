@@ -17,7 +17,7 @@
 substitutions:
   name: noq-sos
   friendly_name: NOQ SOS
-  version: "0.1.0"
+  version: "0.2.0"
   button_pin: "2"           # D1 → push button → GND (internal pull-up)
   led_pin: "21"             # the XIAO's own user LED (lit when low)
   buzzer_pin: "4"           # D3 → active buzzer or vibration motor driver, optional (high = on)

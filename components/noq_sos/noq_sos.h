@@ -30,9 +30,12 @@ struct Settings {
   int16_t tz_min;   // local time = UTC + tz_min
   uint8_t count;
   Person people[MAX_PEOPLE];
+  // 0.2.0: settings saved by 0.1.x end here and are read with the defaults below
+  uint16_t poll_min;  // minutes between Telegram command checks while asleep, 0 = only on presses and check-ins
+  uint8_t menu;       // version of the command menu registered with Telegram (setMyCommands)
 };
 
-enum class Job : uint8_t { NONE, ALERT, CHECKIN, LOW_BATTERY, TEST, TOKEN };
+enum class Job : uint8_t { NONE, ALERT, CHECKIN, LOW_BATTERY, TEST, TOKEN, POLL };
 enum class Mode : uint8_t { AWAKE, BUTTON, TIMER };
 
 class NoqSos : public Component, public AsyncWebHandler {
@@ -87,7 +90,10 @@ class NoqSos : public Component, public AsyncWebHandler {
   bool run_alert_(const Settings &c, std::string &msg);
   bool run_broadcast_(const Settings &c, Job job, std::string &msg);
   bool run_token_(const std::string &token, std::string &msg);
-  void poll_updates_();
+  // setup: also adds whoever starts the bot; timeout: Telegram long poll in seconds (0 = answer what is waiting)
+  void poll_updates_(bool setup, int timeout);
+  std::string command_text_(const Settings &c, uint8_t cmd, uint8_t lang);
+  void save_offset_(int64_t offset);
 
   web_server_base::WebServerBase *base_;
   int button_pin_{-1};
@@ -141,15 +147,15 @@ class NoqSos : public Component, public AsyncWebHandler {
   bool last_ok_{false};
   bool last_seen_{true};
   std::string last_msg_;
-  // while setup is open the worker listens for people who start the bot and adds them
+  // while setup is open the worker listens for people who start the bot and adds them, and answers commands
   volatile bool listen_{false};
-  int64_t update_offset_{0};
 
   // per boot
   uint8_t alert_attempts_{0};
   uint32_t next_attempt_{0};
   bool checkin_done_{false};
   bool low_done_{false};
+  bool poll_done_{false};  // a wake from sleep reads waiting Telegram commands once
 };
 
 }  // namespace esphome::noq_sos

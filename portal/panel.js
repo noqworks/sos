@@ -69,6 +69,12 @@
       checkin: "Günlük yoklama",
       checkinHelp: "Her gün bu saatte sessiz bir \"kolye çalışıyor\" mesajı gelir. Gelmediği gün pil bitmiş ya da kolye ev ağından çıkmıştır.",
       off: "Kapalı",
+      poll: "Telegram komutları",
+      pollHelp: "Sohbette /durum ya da /pil yazılınca kolye uyuyorsa bu sıklıkta bakıp cevaplar. Daha sık bakmak pili daha çabuk bitirir.",
+      pollOff: "Yalnız basınca ve yoklamada",
+      pollEvery: "{m} dakikada bir",
+      pollHour: "Saatte bir",
+      pollHours: "{h} saatte bir",
       tz: "Saat dilimi",
       tzUse: "Bu telefonun saat dilimini kullan ({z})",
       wifi: "Ev ağı",
@@ -150,6 +156,12 @@
       checkin: "Daily check-in",
       checkinHelp: "Every day at this hour a silent \"the pendant is working\" message arrives. If it does not, the battery is flat or the pendant is out of the home network.",
       off: "Off",
+      poll: "Telegram commands",
+      pollHelp: "When someone sends /status or /battery in the chat and the pendant is asleep, it checks this often and answers. Checking more often drains the battery faster.",
+      pollOff: "Only on a press and the check-in",
+      pollEvery: "Every {m} minutes",
+      pollHour: "Every hour",
+      pollHours: "Every {h} hours",
       tz: "Time zone",
       tzUse: "Use this phone's time zone ({z})",
       wifi: "Home network",
@@ -215,6 +227,13 @@
     for (var h = 6; h <= 22; h++) html += "<option value=\"" + h + "\">" + (h < 10 ? "0" : "") + h + ":00</option>";
     sel.innerHTML = html;
     if (v) sel.value = v;
+    var ps = $("poll"), pv = ps.value, ph = "";
+    [0, 15, 30, 60, 180].forEach(function (m) {
+      var l = m === 0 ? t("pollOff") : m === 60 ? t("pollHour") : m > 60 ? t("pollHours", { h: m / 60 }) : t("pollEvery", { m: m });
+      ph += "<option value=\"" + m + "\">" + esc(l) + "</option>";
+    });
+    ps.innerHTML = ph;
+    if (pv) ps.value = pv;
     render();
   }
 
@@ -285,6 +304,7 @@
     var pills = document.querySelectorAll("[data-ml]");
     for (var i = 0; i < pills.length; i++) pills[i].setAttribute("aria-pressed", pills[i].getAttribute("data-ml") === S.lang ? "true" : "false");
     if (document.activeElement !== $("hour")) $("hour").value = String(S.hour);
+    if (document.activeElement !== $("poll") && S.poll != null) $("poll").value = String(S.poll);
     $("tz-value").textContent = tzLabel(S.tz);
     var phone = -new Date().getTimezoneOffset();
     $("tz-use").textContent = t("tzUse", { z: tzLabel(phone) });
@@ -404,6 +424,7 @@
   });
 
   $("hour").addEventListener("change", function () { post("settings", { hour: $("hour").value }); });
+  $("poll").addEventListener("change", function () { post("settings", { poll: $("poll").value }); });
 
   $("status").textContent = t("connecting");
   applyLang();

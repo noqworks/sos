@@ -10,7 +10,7 @@ All changes to NOQ SOS, newest first. Versions are MAJOR.MINOR.PATCH:
 
 _Generated from `releases.json` by `tools/changelog.py`. Edit that file, not this one._
 
-## Next: 0.2.0
+## Next: 0.3.0
 
 Planned, from requests and questions. Suggest something or tell us what you hit: [issues](https://github.com/noqworks/sos/issues).
 
@@ -26,6 +26,24 @@ Planned, from requests and questions. Suggest something or tell us what you hit:
 ### Documentation
 
 - Photos of the build and the finished pendant.
+
+## 0.2.0 · 2026-11-05
+
+Ask the pendant from Telegram: /status and /battery, in Turkish /durum and /pil.
+
+### Firmware
+
+- Telegram commands in a private chat or a family group: /status, /battery, /help and in Turkish /durum, /pil, /yardim. The answer comes as a reply in the language of the command; only chats on the list get one. (Umut)
+- Asleep, the pendant wakes every hour (or every 15 or 30 minutes, every 3 hours, or only on a press and the check-in) to answer waiting commands; awake, it answers at once. (Umut)
+- The commands show up in Telegram's / menu, in Turkish for Turkish-language apps. A command already answered is not answered again after a power loss.
+
+### Setup
+
+- Pendant page: Telegram commands setting under Pendant; the bot's Connected reply names the commands.
+
+**Compatibility:** Update over Wi-Fi from 0.1.0; the bot, the people and the settings stay. Checking for commands every hour uses more battery than the daily check-in alone. Battery reading still not tested and no case yet.
+**Thanks:** Umut
+**Files:** [source and print files (zip)](https://open.noq.works/files/sos/sos-0.2.0-source.zip) · [GitHub release](https://github.com/noqworks/sos/releases/tag/v0.2.0)
 
 ## 0.1.0 · 2026-11-05
 

@@ -4,9 +4,12 @@
 #include "icon_png.h"
 
 #include <algorithm>
+#include <cctype>
+#include <cstddef>
 #include <cstdio>
 #include <cstring>
 #include <ctime>
+#include <strings.h>
 
 #include "driver/gpio.h"
 #include "driver/rtc_io.h"
@@ -33,8 +36,10 @@ namespace esphome::noq_sos {
 static const char *const TAG = "noq_sos";
 static const char *const NVS_NS = "noq_sos";
 static constexpr uint32_t SETTINGS_MAGIC = 0x53305301;
-static constexpr uint32_t RTC_MAGIC = 0x52545302;
+static constexpr uint32_t RTC_MAGIC = 0x52545303;
 static constexpr size_t MAX_BODY = 20 * 1024;
+static constexpr uint8_t MENU_VERSION = 1;  // bump when the command list changes: registered again on the next check
+static constexpr uint16_t POLL_DEFAULT = 60;
 
 // Survives deep sleep (not a power loss): what still has to be delivered and when the next check-in is due.
 struct RtcState {
@@ -50,6 +55,7 @@ struct RtcState {
   int64_t last_alert;   // UTC of the last delivered alert
   uint32_t last_wifi_ms;  // last alert from sleep: press to home network (ms since the app started)
   uint32_t last_sent_ms;  // last alert: press to Telegram's answer
+  int64_t offset;         // next Telegram update to read; also in NVS, so a power loss does not answer old commands again
 };
 static RTC_DATA_ATTR RtcState rtc_state;
 
@@ -166,10 +172,18 @@ class Telegram {
   bool ok() const { return this->body_.find("\"ok\":true") != std::string::npos; }
 
   // 0 delivered, 1 worth retrying (network, rate limit, server), 2 will not work (blocked, chat gone, bad token)
-  int send(int64_t chat, const std::string &text, bool silent) {
+  // reply_to: message id to answer in the chat (a command in a group), 0 = a new message
+  int send(int64_t chat, const std::string &text, bool silent, int64_t reply_to = 0) {
     char head[48];
     snprintf(head, sizeof(head), "{\"chat_id\":%lld,\"text\":\"", static_cast<long long>(chat));
-    std::string body = head + jesc(text.c_str()) + "\",\"disable_notification\":" + (silent ? "true" : "false") + "}";
+    std::string body = head + jesc(text.c_str()) + "\",\"disable_notification\":" + (silent ? "true" : "false");
+    if (reply_to != 0) {
+      char r[96];
+      snprintf(r, sizeof(r), ",\"reply_parameters\":{\"message_id\":%lld,\"allow_sending_without_reply\":true}",
+               static_cast<long long>(reply_to));
+      body += r;
+    }
+    body += "}";
     int status = this->call("sendMessage", body);
     if (status == 200 && this->ok())
       return 0;
@@ -214,14 +228,14 @@ static const Texts TEXTS[2] = {
      "NOQ SOS · {n} · kolye çalışıyor.", "NOQ SOS · kolye çalışıyor.",
      "🔋 NOQ SOS · {n}: kolyenin pili azaldı (%%%d). Kolyeyi şarja takın.",
      "NOQ SOS deneme mesajı ✓\n{n} düğmeye bastığında bildirim bu sohbete gelecek.",
-     "✓ Bağlandı. {n} kolyedeki düğmeye bastığında bildirim bu sohbete gelecek.",
+     "✓ Bağlandı. {n} kolyedeki düğmeye bastığında bildirim bu sohbete gelecek. Kolyenin durumunu /durum, pilini /pil ile sorabilirsin.",
      "Bu kolye en çok 6 sohbete bildirim gönderebilir; liste dolu. Kolyenin sayfasından birini çıkarıp yeniden dene."},
     {"🆘 {n} needs help!", "🆘 Help needed!", "Button pressed at ", "The button was pressed %u times.",
      "Delivered %u minutes late: the pendant could not reach the internet at the time.", "Battery: %d%%",
      "NOQ SOS · {n} · the pendant is working.", "NOQ SOS · the pendant is working.",
      "🔋 NOQ SOS · {n}: the pendant battery is low (%d%%). Please charge it.",
      "NOQ SOS test message ✓\nWhen {n} presses the button, the alert comes to this chat.",
-     "✓ Connected. When {n} presses the pendant's button, the alert comes to this chat.",
+     "✓ Connected. When {n} presses the pendant's button, the alert comes to this chat. Ask for its status with /status, its battery with /battery.",
      "This pendant can alert up to 6 chats and the list is full. Remove one on the pendant's page and try again."},
 };
 
@@ -239,6 +253,94 @@ static std::string fmt(const char *tpl, int v) {
   return b;
 }
 
+// ---- Telegram commands (0.2.0, Umut's request) --------------------------------------------------------------------
+// Turkish and English names; the answer comes in the language of the command. In a group "/durum@bot" is for this
+// bot only; another bot's command is left alone. Only chats on the list get an answer.
+
+enum Cmd : uint8_t { CMD_NONE, CMD_STATUS, CMD_BATTERY, CMD_HELP, CMD_START };
+
+struct CmdTexts {
+  const char *battery;  // percent, volts, hundredths
+  const char *no_battery;
+  const char *wifi;  // network, signal word, dBm
+  const char *good;
+  const char *fair;
+  const char *weak;
+  const char *last;  // time, outcome
+  const char *last_ok;
+  const char *last_part;
+  const char *last_none;
+  const char *pending;
+  const char *checkin;  // hour
+  const char *checkin_off;
+  const char *poll;  // minutes
+  const char *poll_off;
+  const char *version;
+  const char *help;
+  const char *help_poll;  // minutes
+  const char *help_nopoll;
+};
+static const CmdTexts CMD_TEXTS[2] = {
+    {"🔋 Pil: %%%d (%d,%02d V)", "🔋 Pil ölçümü yok: kartta pil bölücüsü takılı değil.", "📶 Wi-Fi: %s, sinyal %s (%d dBm)",
+     "iyi", "orta", "zayıf", "🆘 Son bildirim: %s, %s", "herkese ulaştı", "herkese ulaşmadı", "🆘 Henüz bildirim gönderilmedi.",
+     "⏳ Gönderilmeyi bekleyen bildirim var; kolye yeniden deniyor.", "⏰ Günlük yoklama: %02d:00", "⏰ Günlük yoklama: kapalı",
+     "🕑 Uyurken komutlara %u dakikada bir bakar.", "🕑 Uyurken komutlara yalnız düğmeye basılınca ve yoklamada bakar.",
+     "Yazılım %s", "NOQ SOS komutları\n/durum: kolyenin durumu\n/pil: pil seviyesi\n/yardim: bu liste",
+     "Kolye uyuyorsa komutu en geç %u dakika içinde cevaplar.",
+     "Kolye uyuyorsa komutu düğmeye basılınca ya da günlük yoklamada cevaplar."},
+    {"🔋 Battery: %d%% (%d.%02d V)", "🔋 No battery reading: the battery divider is not fitted.", "📶 Wi-Fi: %s, %s signal (%d dBm)",
+     "good", "fair", "weak", "🆘 Last alert: %s, %s", "reached everyone", "did not reach everyone", "🆘 No alert sent yet.",
+     "⏳ An alert is waiting to go out; the pendant keeps trying.", "⏰ Daily check-in: %02d:00", "⏰ Daily check-in: off",
+     "🕑 While asleep it checks for commands every %u minutes.",
+     "🕑 While asleep it checks for commands only on a press and at the check-in.", "Firmware %s",
+     "NOQ SOS commands\n/status: the pendant's status\n/battery: battery level\n/help: this list",
+     "If the pendant is asleep, it answers within %u minutes.",
+     "If the pendant is asleep, it answers on the next press or at the daily check-in."},
+};
+
+// "/durum", "/Status@noqsos_bot", "/start sos" → command and its language (255: the pendant's message language)
+static uint8_t parse_cmd(const char *text, const char *bot, uint8_t &lang) {
+  if (text[0] != '/')
+    return CMD_NONE;
+  const char *p = text + 1, *e = p;
+  while (*e && *e != ' ' && *e != '@' && *e != '\n')
+    e++;
+  std::string name(p, e - p);
+  for (char &ch : name)
+    ch = static_cast<char>(tolower(static_cast<unsigned char>(ch)));
+  if (*e == '@') {
+    const char *a = e + 1, *z = a;
+    while (*z && *z != ' ' && *z != '\n')
+      z++;
+    size_t len = z - a;
+    if (len != strlen(bot) || strncasecmp(a, bot, len) != 0)
+      return CMD_NONE;  // meant for another bot in the group
+  }
+  static const struct {
+    const char *word;
+    uint8_t cmd;
+    uint8_t lang;
+  } NAMES[] = {{"durum", CMD_STATUS, 0},  {"status", CMD_STATUS, 1}, {"pil", CMD_BATTERY, 0},  {"battery", CMD_BATTERY, 1},
+               {"yardim", CMD_HELP, 0},   {"yardım", CMD_HELP, 0},   {"komutlar", CMD_HELP, 0}, {"help", CMD_HELP, 1},
+               {"commands", CMD_HELP, 1}, {"start", CMD_START, 255}};
+  for (const auto &n : NAMES) {
+    if (name == n.word) {
+      lang = n.lang;
+      return n.cmd;
+    }
+  }
+  return CMD_NONE;
+}
+
+// the "/" menu in Telegram: English for everyone, Turkish for Turkish-language apps (both lists are understood anyway)
+static const char *const MENU_EN =
+    "{\"commands\":[{\"command\":\"status\",\"description\":\"The pendant's status\"},"
+    "{\"command\":\"battery\",\"description\":\"Battery level\"},{\"command\":\"help\",\"description\":\"Commands\"}]}";
+static const char *const MENU_TR =
+    "{\"commands\":[{\"command\":\"durum\",\"description\":\"Kolyenin durumu\"},"
+    "{\"command\":\"pil\",\"description\":\"Pil seviyesi\"},{\"command\":\"yardim\",\"description\":\"Komutlar\"}],"
+    "\"language_code\":\"tr\"}";
+
 // ---- settings -----------------------------------------------------------------------------------------------------
 
 void NoqSos::load_settings_() {
@@ -247,7 +349,12 @@ void NoqSos::load_settings_() {
   bool ok = false;
   if (nvs_open(NVS_NS, NVS_READONLY, &h) == ESP_OK) {
     size_t n = sizeof(s);
-    ok = nvs_get_blob(h, "cfg", &s, &n) == ESP_OK && n == sizeof(s) && s.magic == SETTINGS_MAGIC;
+    ok = nvs_get_blob(h, "cfg", &s, &n) == ESP_OK && s.magic == SETTINGS_MAGIC &&
+         (n == sizeof(s) || n == offsetof(Settings, poll_min));
+    if (ok && n != sizeof(s)) {
+      s.poll_min = POLL_DEFAULT;  // saved by 0.1.x: bot and people stay, command checks start at the default
+      s.menu = 0;
+    }
     nvs_close(h);
   }
   if (!ok) {
@@ -255,9 +362,21 @@ void NoqSos::load_settings_() {
     s.magic = SETTINGS_MAGIC;
     s.hour = 10;
     s.tz_min = 180;  // Türkiye until the page sets the phone's time zone
+    s.poll_min = POLL_DEFAULT;
   }
+  if (s.poll_min != 0 && s.poll_min != 15 && s.poll_min != 30 && s.poll_min != 60 && s.poll_min != 180)
+    s.poll_min = POLL_DEFAULT;
   s.count = std::min<uint8_t>(s.count, MAX_PEOPLE);
   this->cfg_ = s;
+}
+
+void NoqSos::save_offset_(int64_t offset) {
+  nvs_handle_t h;
+  if (nvs_open(NVS_NS, NVS_READWRITE, &h) != ESP_OK)
+    return;
+  nvs_set_i64(h, "off", offset);
+  nvs_commit(h);
+  nvs_close(h);
 }
 
 void NoqSos::save_settings_() {
@@ -283,6 +402,13 @@ void NoqSos::setup() {
   if (rtc_state.magic != RTC_MAGIC) {
     rtc_state = RtcState{};
     rtc_state.magic = RTC_MAGIC;
+    nvs_handle_t h;
+    if (nvs_open(NVS_NS, NVS_READONLY, &h) == ESP_OK) {
+      int64_t off = 0;
+      if (nvs_get_i64(h, "off", &off) == ESP_OK)
+        rtc_state.offset = off;  // after a power loss: commands already answered are not read again
+      nvs_close(h);
+    }
   }
 
   gpio_num_t b = static_cast<gpio_num_t>(this->button_pin_);
@@ -404,6 +530,11 @@ void NoqSos::loop() {
       } else if (rtc_state.pending == 0 && !this->checkin_done_ && this->checkin_due_(now)) {
         this->checkin_done_ = true;
         this->start_job_(Job::CHECKIN);
+      } else if (this->mode_ != Mode::AWAKE && !this->poll_done_ &&
+                 (rtc_state.pending == 0 || this->alert_attempts_ >= 3)) {
+        // woke from sleep: answer the Telegram commands that came in meanwhile (awake, the worker listens all along)
+        this->poll_done_ = true;
+        this->start_job_(Job::POLL);
       }
     }
   }
@@ -419,7 +550,8 @@ void NoqSos::loop() {
     return;  // sleep only once the button is released (a press would wake it at once)
   bool work_left = online && this->configured_() &&
                    ((rtc_state.pending > 0 && this->alert_attempts_ < 3) || this->checkin_due_(now) ||
-                    (!this->low_done_ && this->battery_pct_ >= 0 && this->battery_pct_ <= 20 && !rtc_state.low_sent));
+                    (!this->low_done_ && this->battery_pct_ >= 0 && this->battery_pct_ <= 20 && !rtc_state.low_sent) ||
+                    (this->mode_ != Mode::AWAKE && !this->poll_done_));
   if (this->mode_ == Mode::AWAKE) {
     if (!this->sleep_now_ && static_cast<int32_t>(now - this->awake_until_) < 0)
       return;
@@ -569,7 +701,7 @@ void NoqSos::worker() {
   for (;;) {
     if (ulTaskNotifyTake(pdTRUE, this->listen_ ? pdMS_TO_TICKS(100) : pdMS_TO_TICKS(1000)) == 0) {
       if (this->listen_)
-        this->poll_updates_();
+        this->poll_updates_(true, 3);
       continue;
     }
     xSemaphoreTake(this->lock_, portMAX_DELAY);
@@ -590,6 +722,10 @@ void NoqSos::worker() {
         break;
       case Job::TOKEN:
         ok = this->run_token_(arg, msg);
+        break;
+      case Job::POLL:
+        this->poll_updates_(false, 0);
+        ok = true;
         break;
       default:
         break;
@@ -760,7 +896,9 @@ bool NoqSos::run_token_(const std::string &token, std::string &msg) {
   copy_utf8(this->cfg_.bot, sizeof(this->cfg_.bot), user);
   if (!same) {
     this->cfg_.count = 0;  // a new bot cannot write to the old bot's chats
-    this->update_offset_ = 0;
+    this->cfg_.menu = 0;   // and has no command menu yet
+    rtc_state.offset = 0;
+    this->save_offset_(0);
   }
   this->save_settings_();
   xSemaphoreGive(this->lock_);
@@ -768,34 +906,73 @@ bool NoqSos::run_token_(const std::string &token, std::string &msg) {
   return true;
 }
 
-// Setup only: anyone who taps Start in the bot (or adds it to a group) becomes a recipient and gets a reply in
-// Telegram, so nobody has to find and pick chats by hand. Outside setup the pendant does not listen at all.
-void NoqSos::poll_updates_() {
+// Telegram updates. While setup is open (the pendant's page, or USB) anyone who taps Start in the bot or adds it to a group
+// becomes a recipient and gets a reply, so nobody has to find and pick chats by hand. Always, setup or a wake from sleep:
+// commands from chats on the list are answered as a reply to the command (/durum /pil /yardim, /status /battery /help;
+// 0.2.0, Umut's request). Outside setup nobody new is added and strangers get no answer.
+void NoqSos::poll_updates_(bool setup, int timeout) {
   xSemaphoreTake(this->lock_, portMAX_DELAY);
   Settings c = this->cfg_;
+  int64_t offset = rtc_state.offset;
   xSemaphoreGive(this->lock_);
   if (c.token[0] == 0)
     return;
   Telegram tg(c.token);
+  if (c.menu != MENU_VERSION) {
+    bool ok = tg.call("setMyCommands", MENU_EN) == 200 && tg.ok();
+    ok = ok && tg.call("setMyCommands", MENU_TR) == 200 && tg.ok();
+    if (ok) {
+      xSemaphoreTake(this->lock_, portMAX_DELAY);
+      this->cfg_.menu = MENU_VERSION;
+      this->save_settings_();
+      xSemaphoreGive(this->lock_);
+      ESP_LOGI(TAG, "Command menu registered");
+    }
+  }
   char body[120];
-  snprintf(body, sizeof(body), "{\"offset\":%lld,\"timeout\":3,\"allowed_updates\":[\"message\",\"my_chat_member\"]}",
-           static_cast<long long>(this->update_offset_));
+  snprintf(body, sizeof(body), "{\"offset\":%lld,\"timeout\":%d,\"allowed_updates\":[\"message\",\"my_chat_member\"]}",
+           static_cast<long long>(offset), timeout);
   int status = tg.call("getUpdates", body);
   if (status != 200 || !tg.ok()) {
-    vTaskDelay(pdMS_TO_TICKS(status == 409 ? 15000 : 3000));  // 409: the bot has a webhook elsewhere
+    if (setup)
+      vTaskDelay(pdMS_TO_TICKS(status == 409 ? 15000 : 3000));  // 409: the bot has a webhook elsewhere
     return;
   }
+  struct Ask {
+    int64_t chat;
+    int64_t msg;
+    uint8_t cmd;
+    uint8_t lang;
+  };
   Person hits[8]{};
-  uint8_t n = 0;
+  Ask asks[8]{};
+  uint8_t n = 0, na = 0;
   int64_t last = -1;
-  json::parse_json(tg.body(), [&hits, &n, &last](JsonObject root) -> bool {
+  json::parse_json(tg.body(), [&](JsonObject root) -> bool {
     JsonArray updates = root["result"];
     for (JsonObject u : updates) {
       int64_t uid = u["update_id"] | static_cast<int64_t>(-1);
       last = std::max(last, uid);
-      JsonObject chat;
       const char *text = u["message"]["text"] | "";
-      if (strncmp(text, "/start", 6) == 0) {
+      uint8_t lang = 255;
+      uint8_t cmd = parse_cmd(text, c.bot, lang);
+      if (cmd != CMD_NONE && !(setup && cmd == CMD_START) && na < 8) {
+        int64_t chat = u["message"]["chat"]["id"] | static_cast<int64_t>(0);
+        bool dup = chat == 0;
+        for (uint8_t k = 0; k < na; k++)
+          dup = dup || (asks[k].chat == chat && asks[k].cmd == cmd);  // the same question twice gets one answer
+        if (!dup) {
+          asks[na].chat = chat;
+          asks[na].msg = u["message"]["message_id"] | static_cast<int64_t>(0);
+          asks[na].cmd = cmd == CMD_START ? static_cast<uint8_t>(CMD_HELP) : cmd;  // Start outside setup: the command list
+          asks[na].lang = lang == 255 ? c.lang : lang;
+          na++;
+        }
+      }
+      if (!setup)
+        continue;
+      JsonObject chat;
+      if (cmd == CMD_START) {
         chat = u["message"]["chat"];
       } else {
         const char *st = u["my_chat_member"]["new_chat_member"]["status"] | "";
@@ -825,8 +1002,12 @@ void NoqSos::poll_updates_() {
     }
     return true;
   });
-  if (last >= 0)
-    this->update_offset_ = last + 1;
+  if (last >= 0) {
+    xSemaphoreTake(this->lock_, portMAX_DELAY);
+    rtc_state.offset = last + 1;
+    xSemaphoreGive(this->lock_);
+    this->save_offset_(last + 1);
+  }
   const Texts &tx = TEXTS[c.lang ? 1 : 0];
   for (uint8_t i = 0; i < n; i++) {
     bool full = false;
@@ -856,6 +1037,74 @@ void NoqSos::poll_updates_() {
     replied_i = (replied_i + 1) % 4;
     tg.send(hits[i].id, full ? std::string(tx.full) : with_name(tx.welcome, c.name), false);
   }
+  for (uint8_t i = 0; i < na; i++) {
+    xSemaphoreTake(this->lock_, portMAX_DELAY);
+    Settings now = this->cfg_;
+    xSemaphoreGive(this->lock_);
+    bool known = false;
+    for (uint8_t k = 0; k < now.count; k++)
+      known = known || now.people[k].id == asks[i].chat;
+    if (!known)
+      continue;
+    tg.send(asks[i].chat, this->command_text_(now, asks[i].cmd, asks[i].lang), false, asks[i].msg);
+    ESP_LOGI(TAG, "Answered a command (%u)", asks[i].cmd);
+  }
+}
+
+std::string NoqSos::command_text_(const Settings &c, uint8_t cmd, uint8_t lang) {
+  const CmdTexts &tx = CMD_TEXTS[lang ? 1 : 0];
+  char b[200];
+  std::string bat;
+  int mv = this->battery_mv_;
+  if (mv > 0) {
+    snprintf(b, sizeof(b), tx.battery, this->battery_pct_, mv / 1000, mv % 1000 / 10);
+    bat = b;
+  } else {
+    bat = tx.no_battery;
+  }
+  if (cmd == CMD_BATTERY)
+    return bat;
+  if (cmd != CMD_STATUS) {
+    if (c.poll_min > 0)
+      snprintf(b, sizeof(b), tx.help_poll, static_cast<unsigned>(c.poll_min));
+    else
+      snprintf(b, sizeof(b), "%s", tx.help_nopoll);
+    return std::string(tx.help) + "\n\n" + b;
+  }
+  std::string o = "NOQ SOS";
+  if (c.name[0])
+    o += std::string(" · ") + c.name;
+  o += "\n" + bat;
+  auto *wifi = wifi::global_wifi_component;
+  if (wifi->is_connected()) {
+    char ssid[wifi::SSID_BUFFER_SIZE];
+    int rssi = wifi->wifi_rssi();
+    snprintf(b, sizeof(b), tx.wifi, wifi->wifi_ssid_to(ssid), rssi >= -60 ? tx.good : rssi >= -70 ? tx.fair : tx.weak, rssi);
+    o += "\n" + std::string(b);
+  }
+  if (rtc_state.pending > 0) {
+    o += "\n" + std::string(tx.pending);
+  } else if (rtc_state.last_alert != 0) {
+    snprintf(b, sizeof(b), tx.last, hhmm(rtc_state.last_alert, c.tz_min).c_str(), rtc_state.last_ok ? tx.last_ok : tx.last_part);
+    o += "\n" + std::string(b);
+  } else {
+    o += "\n" + std::string(tx.last_none);
+  }
+  if (c.hour >= 0)
+    snprintf(b, sizeof(b), tx.checkin, c.hour);
+  else
+    snprintf(b, sizeof(b), "%s", tx.checkin_off);
+  o += "\n" + std::string(b);
+  if (c.poll_min > 0)
+    snprintf(b, sizeof(b), tx.poll, static_cast<unsigned>(c.poll_min));
+  else
+    snprintf(b, sizeof(b), "%s", tx.poll_off);
+  o += "\n" + std::string(b);
+#ifdef ESPHOME_PROJECT_VERSION
+  snprintf(b, sizeof(b), tx.version, ESPHOME_PROJECT_VERSION);
+  o += "\n" + std::string(b);
+#endif
+  return o;
 }
 
 // ---- sleep --------------------------------------------------------------------------------------------------------
@@ -893,6 +1142,11 @@ uint32_t NoqSos::sleep_seconds_() {
       s = static_cast<uint32_t>(std::max<int64_t>(60, std::min<int64_t>(d, 26 * 3600)));
     }
     rtc_state.timer_checkin = 1;
+  }
+  // Telegram commands: wake this often to answer them (0.2.0); a sooner check-in or retry keeps its own time
+  if (this->cfg_.poll_min > 0 && this->configured_() && rtc_state.pending == 0 && this->cfg_.poll_min * 60u < s) {
+    s = this->cfg_.poll_min * 60u;
+    rtc_state.timer_checkin = 0;
   }
   return s;
 }
@@ -975,6 +1229,8 @@ static const char *job_name(Job j) {
       return "test";
     case Job::TOKEN:
       return "token";
+    case Job::POLL:
+      return "poll";
     default:
       return "";
   }
@@ -996,7 +1252,8 @@ std::string NoqSos::state_json_() {
 #endif
   o += "\",\"host\":\"" + jesc(App.get_name().c_str()) + "\",\"name\":\"" + jesc(c.name) + "\",\"lang\":\"" +
        (c.lang ? "en" : "tr") + "\"";
-  snprintf(b, sizeof(b), ",\"hour\":%d,\"tz\":%d,\"token\":%s,\"bot\":\"", c.hour, c.tz_min, c.token[0] ? "true" : "false");
+  snprintf(b, sizeof(b), ",\"hour\":%d,\"tz\":%d,\"poll\":%u,\"token\":%s,\"bot\":\"", c.hour, c.tz_min,
+           static_cast<unsigned>(c.poll_min), c.token[0] ? "true" : "false");
   o += b + jesc(c.bot) + "\",\"people\":[";
   for (uint8_t i = 0; i < c.count; i++) {
     snprintf(b, sizeof(b), "%s{\"id\":\"%lld\",\"label\":\"", i ? "," : "", static_cast<long long>(c.people[i].id));
@@ -1090,6 +1347,11 @@ void NoqSos::handleRequest(AsyncWebServerRequest *request) {
         this->cfg_.tz_min = static_cast<int16_t>(tz);
         rtc_state.next_check = 0;
       }
+    }
+    if (request->hasArg("poll")) {
+      int p = atoi(request->arg("poll").c_str());
+      if (p == 0 || p == 15 || p == 30 || p == 60 || p == 180)
+        this->cfg_.poll_min = static_cast<uint16_t>(p);
     }
     this->save_settings_();
     xSemaphoreGive(this->lock_);
