@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>NOQ SOS · Wi-Fi</title>
+<style>/*CSS*/</style>
+</head>
+<body>
+<header class="np-shell">
+  <span role="img" aria-label="NOQopen"><!--LOGO--></span>
+  <nav class="np-lang" aria-label="Language">
+    <button type="button" class="np-link" data-lang="tr">TR</button>
+    <button type="button" class="np-link" data-lang="en">EN</button>
+  </nav>
+</header>
+<main class="np-deck">
+  <section class="np-card" id="setup" aria-labelledby="h-setup">
+    <div class="np-stack">
+      <p class="np-kicker" data-t="kicker"></p>
+      <h1 class="np-title" id="h-setup" data-t="title"></h1>
+      <p class="np-text" data-t="lede"></p>
+    </div>
+    <span class="np-chip" id="device"></span>
+    <div class="np-stack">
+      <div class="np-bar">
+        <h2 class="np-label" data-t="nearby"></h2>
+        <button type="button" class="np-link" id="refresh" data-t="refresh"></button>
+      </div>
+      <ul class="np-list" id="nets" aria-live="polite"></ul>
+      <p class="np-small" id="empty" hidden data-t="empty"></p>
+      <div><button type="button" class="np-link" id="manual" data-t="manual"></button></div>
+    </div>
+    <form class="np-stack" id="form" hidden autocomplete="off" novalidate>
+      <div class="np-field" id="ssid-field" hidden>
+        <label class="np-label" for="ssid" data-t="ssid"></label>
+        <div class="np-input-wrap"><input class="np-input" id="ssid" maxlength="32" autocapitalize="none" autocorrect="off" spellcheck="false"></div>
+      </div>
+      <p class="np-small" id="chosen"></p>
+      <div class="np-field" id="psk-field">
+        <label class="np-label" for="psk" data-t="psk"></label>
+        <div class="np-input-wrap">
+          <input class="np-input" id="psk" type="password" maxlength="64" autocapitalize="none" autocorrect="off" spellcheck="false">
+          <button type="button" class="np-input-btn" id="eye" aria-pressed="false">
+            <svg class="np-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+      <button class="np-btn np-btn-wide" id="connect" type="submit" data-t="connect"></button>
+      <p class="np-small" id="err" role="alert" hidden data-t="error"></p>
+    </form>
+  </section>
+  <section class="np-card" id="done" hidden aria-labelledby="h-done">
+    <div class="np-state">
+      <span class="np-badge"><svg class="np-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+      <div class="np-stack">
+        <p class="np-kicker" data-t="savedKicker"></p>
+        <h1 class="np-title" id="h-done" data-t="doneTitle"></h1>
+        <p class="np-text" data-t="doneLede"></p>
+      </div>
+    </div>
+    <a class="np-btn np-btn-wide" id="open-page" href="#" data-t="openPage"></a>
+    <p class="np-small" id="open-hint" data-t="openHint"></p>
+    <ol class="np-steps"><li><span data-t="s1"></span></li><li><span data-t="s2"></span></li><li><span data-t="s3"></span></li></ol>
+    <p class="np-small" data-t="retry"></p>
+  </section>
+  <footer class="np-foot">
+    <span class="np-small" data-t="foot"></span>
+    <span class="np-small">open.noq.works</span>
+  </footer>
+</main>
+<script>/*JS*/</script>
+</body>
+</html>

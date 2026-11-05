@@ -1,0 +1,46 @@
+# Changelog
+
+Türkçe: [CHANGELOG.tr.md](CHANGELOG.tr.md)
+
+All changes to NOQ SOS, newest first. Versions are MAJOR.MINOR.PATCH:
+
+- **Patch (1.0.x)**: fixes. Parts and firmware stay compatible.
+- **Minor (1.x.0)**: new features or parts, compatible with earlier builds.
+- **Major (2.0.0)**: changes that need new parts or new wiring.
+
+_Generated from `releases.json` by `tools/changelog.py`. Edit that file, not this one._
+
+## Next: 0.2.0
+
+Planned, from requests and questions. Suggest something or tell us what you hit: [issues](https://github.com/noqworks/sos/issues).
+
+### Hardware
+
+- A printed pendant case: button on the front, USB-C for charging, a loop for the cord.
+
+### Firmware
+
+- Battery reading through the D0 divider, tested on the bench, with the real percentage curve of the cell.
+- Faster alerts: keep the Telegram connection details across sleep so the secure handshake is shorter.
+
+### Documentation
+
+- Photos of the build and the finished pendant.
+
+## 0.1.0 · 2026-11-05
+
+First test build: one press sends a Telegram alert straight from the pendant.
+
+### Firmware
+
+- Deep sleep on a XIAO ESP32S3; a press wakes it, joins the home Wi-Fi and alerts every chat on the list.
+- An alert that cannot go out is kept and retried after 1, 2, 5 and then every 10 minutes; the message says how late it is.
+- Optional daily silent check-in and a low battery message; updates over Wi-Fi while the pendant is awake.
+
+### Setup
+
+- Wi-Fi from the browser installer or the NOQ Open setup network, which then opens the pendant's own page.
+- On that page: open BotFather with /newbot ready, paste its whole message (the token is picked out), then tap Start in the bot to join the list.
+
+**Compatibility:** Test build. Battery reading is not tested yet and there is no case yet; build it on the bench first.
+**Files:** [source and print files (zip)](https://open.noq.works/files/sos/sos-0.1.0-source.zip) · [GitHub release](https://github.com/noqworks/sos/releases/tag/v0.1.0)

@@ -1,0 +1,18 @@
+NOQ SOS hardware and documentation
+
+Copyright (c) 2026 NOQ (İçerikçi Medya Yazılım Pazarlama Sanayi ve Ticaret A.Ş.)
+
+The print files in hardware/ (when added), the wiring diagram in docs/ and the documentation
+(README.md, README.tr.md) are licensed under the Creative Commons Attribution 4.0
+International licence (CC BY 4.0).
+
+You are free to share and adapt this material for any purpose, including
+commercially, as long as you give appropriate credit, provide a link to the
+licence and indicate if changes were made.
+
+Suggested attribution: "Gloam, NOQ Open · open.noq.works/projects/gloam"
+
+Full licence text: https://creativecommons.org/licenses/by/4.0/legalcode
+
+The firmware, the setup page and the ESPHome component are licensed separately
+under the MIT licence (see LICENSE).

@@ -1,0 +1,37 @@
+name: Firmware
+
+on:
+  push:
+    paths: ["firmware/**", "components/**", "portal/**", ".github/workflows/firmware.yml"]
+  pull_request:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the setup page is built
+        run: python3 portal/build.py --check
+      - name: Use this checkout for the setup page component
+        run: |
+          sed -i 's#source: github://noqworks/sos@main#source: { type: local, path: ../components }#' firmware/noq-sos.yaml
+      - uses: esphome/build-action@v7.0.0
+        id: esphome
+        with:
+          yaml-file: firmware/noq-sos.yaml
+          complete-manifest: true
+      - name: Attach binaries to the release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          v="${{ github.event.release.tag_name }}"
+          d="${{ steps.esphome.outputs.name }}"
+          cp "$d/${d}.factory.bin" "sos-${v#v}.factory.bin"
+          cp "$d/${d}.ota.bin" "sos-${v#v}.ota.bin"
+          gh release upload "$v" "sos-${v#v}.factory.bin" "sos-${v#v}.ota.bin" --clobber

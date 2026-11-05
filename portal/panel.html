@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#f5f5f5">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="NOQ SOS">
+<link rel="apple-touch-icon" href="/icon.png">
+<link rel="icon" type="image/png" href="/icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<title>NOQ SOS</title>
+<style>/*CSS*/</style>
+</head>
+<body>
+<header class="np-shell">
+  <span role="img" aria-label="NOQopen"><!--LOGO--></span>
+  <nav class="np-lang" aria-label="Language">
+    <button type="button" class="np-link" data-lang="tr">TR</button>
+    <button type="button" class="np-link" data-lang="en">EN</button>
+  </nav>
+</header>
+<main class="np-deck">
+  <section class="np-card" aria-labelledby="h-device">
+    <div class="np-stack">
+      <p class="np-kicker" data-t="kicker"></p>
+      <h1 class="np-title" id="h-device">NOQ SOS</h1>
+      <p class="np-text" data-t="lede"></p>
+    </div>
+    <div class="np-chips">
+      <span class="np-chip" id="chip-host"></span>
+      <span class="np-chip" id="chip-battery" hidden></span>
+      <span class="np-chip" id="chip-wifi" hidden></span>
+    </div>
+    <p class="np-small" id="status" role="status" aria-live="polite"></p>
+  </section>
+
+  <section class="np-card" aria-labelledby="h-who">
+    <div class="np-stack">
+      <p class="np-kicker" data-t="whoKicker"></p>
+      <h2 class="np-h" id="h-who" data-t="whoTitle"></h2>
+      <p class="np-small" data-t="whoHelp"></p>
+    </div>
+    <form class="np-stack" id="who-form" autocomplete="off" novalidate>
+      <div class="np-field">
+        <label class="np-label" for="name" data-t="nameLabel"></label>
+        <div class="np-input-wrap"><input class="np-input np-input-plain" id="name" maxlength="40" autocomplete="off"></div>
+      </div>
+      <div><button class="np-btn" type="submit" id="name-save" data-t="save"></button></div>
+    </form>
+  </section>
+
+  <section class="np-card" aria-labelledby="h-bot">
+    <div class="np-stack">
+      <p class="np-kicker" data-t="botKicker"></p>
+      <h2 class="np-h" id="h-bot" data-t="botTitle"></h2>
+    </div>
+    <div class="np-stack" id="bot-new">
+      <ol class="np-steps">
+        <li><span data-t="bot1"></span></li>
+        <li><span id="bot2"></span></li>
+        <li><span data-t="bot3"></span></li>
+      </ol>
+      <div class="np-actions">
+        <a class="np-btn" id="botfather" href="https://t.me/BotFather?text=%2Fnewbot" target="_blank" rel="noopener" data-t="openBotFather"></a>
+        <button type="button" class="np-link" id="copy-user" data-t="copyUser"></button>
+      </div>
+      <form class="np-stack" id="token-form" autocomplete="off" novalidate>
+        <div class="np-field">
+          <label class="np-label" for="token" data-t="tokenLabel"></label>
+          <div class="np-input-wrap">
+            <input class="np-input np-code" id="token" type="password" maxlength="4000" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="123456789:AA…">
+            <button type="button" class="np-input-btn" id="eye" aria-pressed="false">
+              <svg class="np-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+        <div><button class="np-btn" type="submit" id="token-save" data-t="connect"></button></div>
+        <p class="np-small" id="token-msg" role="alert" hidden></p>
+      </form>
+    </div>
+    <div class="np-rows" id="bot-set" hidden>
+      <div class="np-set">
+        <div class="np-set-text">
+          <p class="np-set-label" data-t="botConnected"></p>
+          <a class="np-set-value" id="bot-link" target="_blank" rel="noopener"></a>
+        </div>
+        <button type="button" class="np-link" id="token-change" data-t="change"></button>
+      </div>
+    </div>
+  </section>
+
+  <section class="np-card" id="people-card" hidden aria-labelledby="h-people">
+    <div class="np-stack">
+      <p class="np-kicker" data-t="peopleKicker"></p>
+      <h2 class="np-h" id="h-people" data-t="peopleTitle"></h2>
+    </div>
+    <p class="np-text" data-t="peopleLede"></p>
+    <div class="np-actions">
+      <a class="np-btn" id="tg-start" target="_blank" rel="noopener" data-t="openTelegram"></a>
+      <a class="np-link" id="tg-group" target="_blank" rel="noopener" data-t="addGroup"></a>
+    </div>
+    <div class="np-stack">
+      <p class="np-small" data-t="others"></p>
+      <div class="np-actions">
+        <a class="np-link" id="share-wa" target="_blank" rel="noopener" data-t="shareWa"></a>
+        <button type="button" class="np-link" id="copy-link" data-t="copyLink"></button>
+      </div>
+    </div>
+    <div class="np-stack">
+      <h3 class="np-label" data-t="peopleList"></h3>
+      <ul class="np-list" id="people" aria-live="polite"></ul>
+      <p class="np-small" id="people-empty" data-t="noneYet"></p>
+    </div>
+    <p class="np-small" id="people-msg" role="status" hidden></p>
+  </section>
+
+  <section class="np-card" id="test-card" hidden aria-labelledby="h-test">
+    <div class="np-stack">
+      <p class="np-kicker" data-t="testKicker"></p>
+      <h2 class="np-h" id="h-test" data-t="testTitle"></h2>
+      <p class="np-small" data-t="testHelp"></p>
+    </div>
+    <div class="np-actions"><button class="np-btn" type="button" id="test" data-t="testAction"></button></div>
+    <p class="np-small" id="test-msg" role="status" hidden></p>
+    <p class="np-small" id="last" hidden></p>
+  </section>
+
+  <section class="np-card" aria-labelledby="h-settings">
+    <div class="np-stack">
+      <p class="np-kicker" data-t="setKicker"></p>
+      <h2 class="np-h" id="h-settings" data-t="setTitle"></h2>
+    </div>
+    <div class="np-rows">
+      <div class="np-set">
+        <div class="np-set-text"><p class="np-set-label" data-t="msgLang"></p><p class="np-small" data-t="msgLangHelp"></p></div>
+        <div class="np-pills" role="group" id="msg-lang">
+          <button type="button" class="np-pill" data-ml="tr">Türkçe</button>
+          <button type="button" class="np-pill" data-ml="en">English</button>
+        </div>
+      </div>
+      <div class="np-set">
+        <div class="np-set-text"><label class="np-set-label" for="hour" data-t="checkin"></label><p class="np-small" data-t="checkinHelp"></p></div>
+        <select class="np-select" id="hour"></select>
+      </div>
+      <div class="np-set">
+        <div class="np-set-text"><p class="np-set-label" data-t="tz"></p><span class="np-set-value" id="tz-value"></span></div>
+        <button type="button" class="np-link" id="tz-use"></button>
+      </div>
+      <div class="np-set">
+        <div class="np-set-text"><p class="np-set-label" data-t="wifi"></p><span class="np-set-value" id="wifi-value"></span></div>
+        <button type="button" class="np-link" id="wifi-change" data-t="wifiChange"></button>
+        <div class="np-confirm" id="wifi-confirm" hidden>
+          <p class="np-small" data-t="wifiSure"></p>
+          <div class="np-actions">
+            <button type="button" class="np-btn" id="wifi-yes" data-t="wifiYes"></button>
+            <button type="button" class="np-link" id="wifi-no" data-t="cancel"></button>
+          </div>
+        </div>
+      </div>
+      <div class="np-set">
+        <div class="np-set-text"><p class="np-set-label" data-t="finish"></p><p class="np-small" data-t="finishHelp"></p></div>
+        <button type="button" class="np-link" id="finish" data-t="finishAction"></button>
+      </div>
+    </div>
+  </section>
+
+  <footer class="np-foot">
+    <span class="np-small" data-t="foot"></span>
+    <span class="np-small" id="version"></span>
+  </footer>
+</main>
+<script>/*JS*/</script>
+</body>
+</html>

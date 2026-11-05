@@ -1,0 +1,69 @@
+/* NOQopen device UI · tokens
+   Same names and values as the NOQ light theme. The device serves this page offline, so the tokens live here instead of a
+   CDN. components.css only reads these tokens; no raw values there. */
+:root {
+  color-scheme: light;
+
+  /* colour: light only */
+  --ms-page: #f5f5f5;
+  --ms-surface: #ffffff;
+  --ms-surface-2: #f4f4f4;
+  --ms-fg: #1d1d1d;
+  --ms-fg-mid: rgb(29 29 29 / 0.64);
+  --ms-fg-soft: rgb(29 29 29 / 0.4);
+  --ms-line: #e2e2e2;
+  --ms-accent: #111111;
+  --ms-on-accent: #ffffff;
+  --ms-open: #a3e635;                       /* NOQopen signature green, accents only */
+  --ms-glass-bg: rgb(255 255 255 / 0.72);
+  --ms-glass-border: var(--ms-line);
+  --ms-glass-filter: blur(20px) saturate(1.6);
+  --ms-shadow-float: 0 8px 30px rgb(0 0 0 / 0.06), inset 0 1px 0 rgb(255 255 255 / 0.6);
+
+  /* light colours: the control page tints each light card with the colour that light gives */
+  --np-tone-amber: #ffa23a;
+  --np-tone-warm: #ffd79a;
+  --np-tone-default: #fff1d6;
+  --np-glow-blur: 24px;
+
+  /* type: SF on Apple, system stack elsewhere (the device ships no web fonts) */
+  --ms-font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+  --ms-font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+  --ms-weight-strong: 600;
+  --ms-weight-heading: 600;
+  --ms-ed-tracking-heading: -0.02em;
+  --ms-ed-h3: 1.5rem;      --ms-ed-h3-lh: 1.18;
+  --ms-ed-h5: 1.0625rem;   --ms-ed-h5-lh: 1.35;
+  --ms-ed-body: 1rem;      --ms-ed-body-lh: 1.5;
+  --ms-ed-small: 0.875rem; --ms-ed-small-lh: 1.45;
+  --ms-ed-caption: 0.75rem;
+
+  /* size */
+  --ms-space-unit: 4px;
+  --ms-border-width: 1px;
+  --ms-pad-card: 24px;
+  --ms-pad-field-x: 16px;
+  --ms-pad-field-y: 12px;
+  --ms-control-h: 48px;
+  --np-switch-w: 52px;
+  --np-switch-h: 32px;
+  --np-thumb: 28px;
+  --ms-r-pill: 9999px;
+  --ms-r-container: calc(var(--ms-pad-card) + var(--ms-pad-field-y));
+  --ms-r-inner: var(--ms-pad-field-y);
+  --ms-ed-shell-inset: calc(var(--ms-space-unit) * 3);
+  --ms-ed-logo-h: calc(var(--ms-space-unit) * 5.5);
+  --ms-ed-card-gap: calc(var(--ms-space-unit) * 3);
+  --ms-measure: 30rem;
+  --ms-focus-width: 2px;
+  --ms-ease: cubic-bezier(0.2, 0, 0, 1);
+  --ms-dur: 200ms;
+}
+
+@supports (font: -apple-system-body) {
+  :root { --ms-ed-tracking-heading: -0.008em; }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root { --ms-glass-bg: var(--ms-surface); --ms-glass-filter: none; }
+}

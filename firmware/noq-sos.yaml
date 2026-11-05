@@ -1,0 +1,92 @@
+# NOQ SOS · call pendant: one press sends a Telegram alert
+# NOQopen · https://open.noq.works/projects/sos/ · firmware MIT licence
+#
+# Seeed Studio XIAO ESP32S3, one push button and a small LiPo cell. The board sleeps; a press wakes it, it joins the
+# home Wi-Fi and sends a Telegram message straight to the people chosen on its own page. The bot belongs to the
+# family and the pendant talks to Telegram itself: no server, app or account of ours in between.
+#
+# Setup, either way:
+#   computer   open.noq.works/install/sos/ installs this firmware over USB and sets the Wi-Fi (Improv Serial)
+#   phone      first power-on opens the "noq-sos-xxxxxx" setup network with the NOQopen setup page
+# Then http://noq-sos-xxxxxx.local: name, Telegram bot, recipients, test message, daily check-in.
+#
+# Awake: for 10 minutes after power-on, a reset or an install, while the page is open and while it is on a computer.
+# Asleep otherwise (deep sleep); a press, a pending retry or the daily check-in wakes it.
+# An alert that cannot go out (no Wi-Fi, no internet) is kept and retried after 1, 2, 5 and then every 10 minutes.
+
+substitutions:
+  name: noq-sos
+  friendly_name: NOQ SOS
+  version: "0.1.0"
+  button_pin: "2"           # D1 → push button → GND (internal pull-up)
+  led_pin: "21"             # the XIAO's own user LED (lit when low)
+  buzzer_pin: "4"           # D3 → active buzzer or vibration motor driver, optional (high = on)
+  battery_pin: "1"          # D0 ← BAT+ through 1 MΩ / 1 MΩ, optional; reads nothing when not fitted
+  time_zone: "<+03>-3"      # until the page sets the phone's time zone
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  comment: NOQopen NOQ SOS ${version}
+  name_add_mac_suffix: true
+  project:
+    name: noqopen.sos
+    version: ${version}
+
+esp32:
+  board: seeed_xiao_esp32s3
+  variant: esp32s3
+  cpu_frequency: 240MHz
+  framework:
+    type: esp-idf
+    sdkconfig_options:
+      CONFIG_LWIP_DHCP_RESTORE_LAST_IP: y              # after a wake-up ask for the last address, no full DHCP round
+      CONFIG_BOOTLOADER_SKIP_VALIDATE_IN_DEEP_SLEEP: y  # the image was checked at power-on; wake-ups start faster
+
+external_components:
+  - source: github://noqworks/sos@main
+    components: [noq_sos]
+
+# Boot-loop guard off: wake-ups from deep sleep are short by design and would count as a boot loop after ten
+# quick presses, leaving the pendant in a mode that cannot send alerts.
+safe_mode:
+  disabled: true
+
+logger:
+  hardware_uart: USB_SERIAL_JTAG
+  level: INFO
+
+wifi:
+  ap: {}                    # setup network, only while the pendant has no home network
+  fast_connect: true        # straight to the saved network after a wake-up, no scan
+  power_save_mode: none     # awake only for seconds at a time; no Wi-Fi power saving while it is
+  on_connect:
+    - lambda: wifi::global_wifi_component->set_ap_timeout(0);
+
+# Updates over Wi-Fi while the pendant is awake (setup window, on a computer, page open); the browser installer
+# over USB works as well.
+ota:
+  - platform: esphome
+
+captive_portal:
+
+improv_serial:
+  next_url: http://{{ip_address}}/
+
+time:
+  - platform: sntp
+    id: sntp_time
+    timezone: ${time_zone}
+
+# Brings in the HTTPS client and the CA certificate bundle the pendant uses to reach api.telegram.org.
+http_request:
+  verify_ssl: true
+
+noq_sos:
+  button_pin: ${button_pin}
+  led_pin: ${led_pin}
+  led_inverted: true
+  buzzer_pin: ${buzzer_pin}
+  battery_pin: ${battery_pin}
+  battery_ratio: 2.0
+  setup_window: 10min

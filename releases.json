@@ -1,0 +1,73 @@
+{
+  "product": "sos",
+  "name": "NOQ SOS",
+  "repo": "https://github.com/noqworks/sos",
+  "site": "https://open.noq.works/projects/sos/",
+  "files": "https://open.noq.works/files/sos/",
+  "next": {
+    "version": "0.2.0",
+    "items": [
+      {
+        "area": "hardware",
+        "en": "A printed pendant case: button on the front, USB-C for charging, a loop for the cord.",
+        "tr": "Baskı kolye kutusu: önde düğme, şarj için USB-C, ip için halka."
+      },
+      {
+        "area": "firmware",
+        "en": "Battery reading through the D0 divider, tested on the bench, with the real percentage curve of the cell.",
+        "tr": "D0 bölücüsüyle pil ölçümü, masada denenmiş ve hücrenin gerçek yüzde eğrisiyle."
+      },
+      {
+        "area": "firmware",
+        "en": "Faster alerts: keep the Telegram connection details across sleep so the secure handshake is shorter.",
+        "tr": "Daha hızlı bildirim: Telegram bağlantı bilgisini uykuda saklayıp şifreli el sıkışmayı kısaltmak."
+      },
+      {
+        "area": "docs",
+        "en": "Photos of the build and the finished pendant.",
+        "tr": "Yapım ve bitmiş kolye fotoğrafları."
+      }
+    ]
+  },
+  "releases": [
+    {
+      "version": "0.1.0",
+      "date": "2026-11-05",
+      "summary": {
+        "en": "First test build: one press sends a Telegram alert straight from the pendant.",
+        "tr": "İlk deneme sürümü: tek basış, kolyeden doğrudan Telegram bildirimi gönderir."
+      },
+      "changes": [
+        {
+          "area": "firmware",
+          "en": "Deep sleep on a XIAO ESP32S3; a press wakes it, joins the home Wi-Fi and alerts every chat on the list.",
+          "tr": "XIAO ESP32S3 derin uykuda bekler; basınca uyanır, ev Wi-Fi'ına bağlanır ve listedeki bütün sohbetlere bildirim gönderir."
+        },
+        {
+          "area": "firmware",
+          "en": "An alert that cannot go out is kept and retried after 1, 2, 5 and then every 10 minutes; the message says how late it is.",
+          "tr": "Gönderilemeyen bildirim saklanır; 1, 2, 5 dakika sonra ve ardından 10 dakikada bir yeniden denenir, mesaj ne kadar geciktiğini yazar."
+        },
+        {
+          "area": "firmware",
+          "en": "Optional daily silent check-in and a low battery message; updates over Wi-Fi while the pendant is awake.",
+          "tr": "İsteğe bağlı günlük sessiz yoklama ve pil azaldı mesajı; kolye uyanıkken Wi-Fi üzerinden güncelleme."
+        },
+        {
+          "area": "setup",
+          "en": "Wi-Fi from the browser installer or the NOQ Open setup network, which then opens the pendant's own page.",
+          "tr": "Wi-Fi tarayıcı kurulumundan ya da NOQ Open kurulum ağından; ardından kolyenin kendi sayfası açılır."
+        },
+        {
+          "area": "setup",
+          "en": "On that page: open BotFather with /newbot ready, paste its whole message (the token is picked out), then tap Start in the bot to join the list.",
+          "tr": "O sayfada: BotFather /newbot hazır açılır, mesajının tamamı yapıştırılır (anahtarı sayfa ayıklar), sonra botta Başlat'a basan listeye girer."
+        }
+      ],
+      "compatibility": {
+        "en": "Test build. Battery reading is not tested yet and there is no case yet; build it on the bench first.",
+        "tr": "Deneme sürümü. Pil ölçümü henüz denenmedi ve kutusu henüz yok; önce masada kur."
+      }
+    }
+  ]
+}

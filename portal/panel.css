@@ -1,0 +1,52 @@
+/* NOQ SOS page parts. Reads tokens.css only; shares components.css with the setup page. */
+.np-chips { display: flex; flex-wrap: wrap; justify-content: flex-start; gap: calc(var(--ms-space-unit) * 2); min-width: 0; }
+.np-chips .np-chip { justify-self: auto; }
+.np-h { margin: 0; font-family: var(--ms-font-display); font-size: var(--ms-ed-h5); line-height: var(--ms-ed-h5-lh);
+  font-weight: var(--ms-weight-heading); letter-spacing: var(--ms-ed-tracking-heading); min-width: 0; overflow-wrap: anywhere; }
+.np-val { font-variant-numeric: tabular-nums; }
+.np-input-plain { padding-right: var(--ms-pad-field-x); }
+.np-steps a, .np-set a { color: var(--ms-fg); font-weight: var(--ms-weight-strong); text-decoration: underline;
+  text-decoration-color: var(--ms-line); text-underline-offset: 0.25em; overflow-wrap: anywhere; }
+.np-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: var(--ms-ed-small); }
+
+/* choice pills (message language) */
+.np-pills { display: flex; flex-wrap: wrap; justify-content: flex-start; gap: calc(var(--ms-space-unit) * 2); }
+.np-pill { min-height: calc(var(--ms-space-unit) * 10); padding: 0 calc(var(--ms-space-unit) * 4); border-radius: var(--ms-r-pill);
+  border: var(--ms-border-width) solid var(--ms-line); background: var(--ms-surface); font-size: var(--ms-ed-small);
+  cursor: pointer; transition: background-color var(--ms-dur) var(--ms-ease), color var(--ms-dur) var(--ms-ease); }
+.np-pill[aria-pressed="true"] { border-color: var(--ms-accent); background: var(--ms-accent); color: var(--ms-on-accent);
+  font-weight: var(--ms-weight-strong); }
+
+/* settings rows */
+.np-rows { display: grid; grid-template-columns: minmax(0, 1fr); }
+.np-set { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: calc(var(--ms-space-unit) * 3);
+  padding: calc(var(--ms-space-unit) * 4) 0; border-top: var(--ms-border-width) solid var(--ms-line); min-width: 0; }
+.np-rows > :first-child { border-top: 0; padding-top: 0; }
+.np-rows > :last-child { padding-bottom: 0; }
+.np-set-text { display: grid; gap: var(--ms-space-unit); flex: 1 1 calc(var(--ms-space-unit) * 40); min-width: 0; }
+.np-set-label { margin: 0; font-weight: var(--ms-weight-strong); }
+.np-set-value { display: inline-flex; align-items: center; gap: calc(var(--ms-space-unit) * 2); color: var(--ms-fg);
+  font-variant-numeric: tabular-nums; overflow-wrap: anywhere; min-width: 0; }
+.np-set .np-link { justify-self: start; text-align: left; }
+.np-select { min-height: calc(var(--ms-control-h) - var(--ms-space-unit) * 2); padding: 0 var(--ms-pad-field-x);
+  border-radius: var(--ms-r-pill); border: var(--ms-border-width) solid var(--ms-line); background: var(--ms-surface);
+  font: inherit; color: inherit; font-variant-numeric: tabular-nums; outline: none; }
+.np-select:focus { border-color: var(--ms-accent); }
+
+/* people list: rows that toggle */
+.np-opt { justify-content: space-between; }
+.np-opt .np-check { opacity: 0; }
+.np-opt[aria-checked="true"] { background: var(--ms-surface-2); }
+.np-opt[aria-checked="true"] .np-row-name { font-weight: var(--ms-weight-strong); }
+.np-opt[aria-checked="true"] .np-check { opacity: 1; }
+.np-confirm { display: grid; gap: calc(var(--ms-space-unit) * 2); padding: var(--ms-pad-field-x); border-radius: var(--ms-r-inner);
+  background: var(--ms-surface-2); flex: 1 1 100%; }
+
+/* links that look like buttons, recipient rows with a remove control */
+a.np-btn { text-decoration: none; }
+.np-person { display: flex; align-items: center; gap: calc(var(--ms-space-unit) * 3); min-height: var(--ms-control-h);
+  padding: var(--ms-pad-field-y) var(--ms-pad-field-x); border-radius: var(--ms-r-inner); background: var(--ms-surface-2); }
+.np-person .np-row-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.np-person .np-link { flex: none; }
+.np-fresh { animation: np-in 600ms var(--ms-ease); }
+@keyframes np-in { from { background: var(--ms-open); } }
