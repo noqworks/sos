@@ -37,8 +37,9 @@ static const char *const TAG = "noq_sos";
 static const char *const NVS_NS = "noq_sos";
 static constexpr uint32_t SETTINGS_MAGIC = 0x53305301;
 static constexpr uint32_t RTC_MAGIC = 0x52545303;
+static constexpr uint32_t BATLOG_MAGIC = 0x42415401;
 static constexpr size_t MAX_BODY = 20 * 1024;
-static constexpr uint8_t MENU_VERSION = 1;  // bump when the command list changes: registered again on the next check
+static constexpr uint8_t MENU_VERSION = 2;  // bump when the command list changes: registered again on the next check
 static constexpr uint16_t POLL_DEFAULT = 60;
 
 // Survives deep sleep (not a power loss): what still has to be delivered and when the next check-in is due.
@@ -64,6 +65,9 @@ static const uint16_t FX_PRESS[] = {150};
 static const uint16_t FX_SENT[] = {70, 110, 70, 110, 70};
 static const uint16_t FX_FAIL[] = {900};
 static const uint16_t FX_HELLO[] = {40};
+// discovery: one short = good, two = fair, three = weak; FX_FAIL (one long) = no network
+static const uint16_t FX_K2[] = {150, 220, 150};
+static const uint16_t FX_K3[] = {150, 220, 150, 220, 150};
 
 static NoqSos *s_self = nullptr;
 
@@ -112,18 +116,23 @@ static void copy_utf8(char *dst, size_t n, const std::string &src) {
   dst[len] = 0;
 }
 
-static int battery_percent(int mv) {
-  // resting LiPo curve, close enough for "charge it soon"
+static constexpr int BAT_MAX_MV = 4400;     // above this the reading is not a single LiPo cell
+static constexpr int BAT_SPREAD_MV = 300;   // eight samples further apart than this: the pin is floating
+
+static float battery_percent_f(int mv) {
+  // resting LiPo curve, close enough for "charge it soon" and for the trend
   static const int MV[] = {4200, 4100, 4000, 3900, 3800, 3750, 3700, 3650, 3600, 3500, 3300};
   static const int PC[] = {100, 90, 80, 65, 50, 40, 30, 20, 12, 5, 0};
   if (mv >= MV[0])
-    return 100;
+    return 100.0f;
   for (int i = 1; i < 11; i++) {
     if (mv >= MV[i])
-      return PC[i] + (PC[i - 1] - PC[i]) * (mv - MV[i]) / (MV[i - 1] - MV[i]);
+      return PC[i] + static_cast<float>(PC[i - 1] - PC[i]) * (mv - MV[i]) / (MV[i - 1] - MV[i]);
   }
-  return 0;
+  return 0.0f;
 }
+
+static int battery_percent(int mv) { return static_cast<int>(battery_percent_f(mv)); }
 
 // ---- Telegram Bot API ---------------------------------------------------------------------------------------------
 
@@ -239,6 +248,41 @@ static const Texts TEXTS[2] = {
      "This pendant can alert up to 6 chats and the list is full. Remove one on the pendant's page and try again."},
 };
 
+// ---- battery texts (0.3.0) ----------------------------------------------------------------------------------------
+
+struct BatTexts {
+  const char *charging;  // volts, hundredths
+  const char *full;      // volts, hundredths
+  const char *last;      // date
+  const char *last_full;
+  const char *approx;  // date
+  const char *left;    // days
+  const char *left_one;
+  const char *left_calc;
+  const char *past;          // days
+  const char *checkin_left;  // days
+  const char *months[12];
+};
+static const BatTexts BAT_TEXTS[2] = {
+    {"🔌 Şarj oluyor, ≈%%%d (%d,%02d V)", "🔋 Pil dolu (%d,%02d V), şarjda", "🗓 Son şarj: %s", ", dolu", "%s civarı",
+     "⏳ Tahmini: yaklaşık %d gün daha", "⏳ Tahmini: yaklaşık bir gün kaldı",
+     "⏳ Tahmini: ilk günün ölçümlerinden sonra", "↺ Önceki şarj %d gün gitti.", " · yaklaşık %d gün",
+     {"Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"}},
+    {"🔌 Charging, ≈%d%% (%d.%02d V)", "🔋 Battery full (%d.%02d V), on the charger", "🗓 Last charge: %s", ", to full",
+     "around %s", "⏳ Estimate: about %d more days", "⏳ Estimate: about a day left",
+     "⏳ Estimate: after the first day of readings", "↺ The previous charge lasted %d days.", " · about %d days",
+     {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}},
+};
+
+static std::string day_time(int64_t utc, int tz_min, const BatTexts &bt) {
+  time_t local = static_cast<time_t>(utc + tz_min * 60);
+  struct tm tm {};
+  gmtime_r(&local, &tm);
+  char b[32];
+  snprintf(b, sizeof(b), "%d %s %02d:%02d", tm.tm_mday, bt.months[tm.tm_mon % 12], tm.tm_hour, tm.tm_min);
+  return b;
+}
+
 static std::string with_name(const char *tpl, const char *name) {
   std::string s = tpl;
   size_t at = s.find("{n}");
@@ -257,11 +301,12 @@ static std::string fmt(const char *tpl, int v) {
 // Turkish and English names; the answer comes in the language of the command. In a group "/durum@bot" is for this
 // bot only; another bot's command is left alone. Only chats on the list get an answer.
 
-enum Cmd : uint8_t { CMD_NONE, CMD_STATUS, CMD_BATTERY, CMD_HELP, CMD_START };
+enum Cmd : uint8_t { CMD_NONE, CMD_STATUS, CMD_BATTERY, CMD_HELP, CMD_START, CMD_WAKE };
 
 struct CmdTexts {
   const char *battery;  // percent, volts, hundredths
   const char *no_battery;
+  const char *bad_battery;  // volts, hundredths
   const char *wifi;  // network, signal word, dBm
   const char *good;
   const char *fair;
@@ -281,19 +326,23 @@ struct CmdTexts {
   const char *help_nopoll;
 };
 static const CmdTexts CMD_TEXTS[2] = {
-    {"🔋 Pil: %%%d (%d,%02d V)", "🔋 Pil ölçümü yok: kartta pil bölücüsü takılı değil.", "📶 Wi-Fi: %s, sinyal %s (%d dBm)",
+    {"🔋 Pil: %%%d (%d,%02d V)", "🔋 Pil ölçümü yok: kartta pil bölücüsü takılı değil.",
+     "🔋 Pil ölçülemiyor: D0 %d,%02d V okuyor, tek hücre en çok 4,2 V olur. D0 ile GND arasındaki 1 MΩ'u ve GND bağlantısını kontrol edin.",
+     "📶 Wi-Fi: %s, sinyal %s (%d dBm)",
      "iyi", "orta", "zayıf", "🆘 Son bildirim: %s, %s", "herkese ulaştı", "herkese ulaşmadı", "🆘 Henüz bildirim gönderilmedi.",
      "⏳ Gönderilmeyi bekleyen bildirim var; kolye yeniden deniyor.", "⏰ Günlük yoklama: %02d:00", "⏰ Günlük yoklama: kapalı",
      "🕑 Uyurken komutlara %u dakikada bir bakar.", "🕑 Uyurken komutlara yalnız düğmeye basılınca ve yoklamada bakar.",
-     "Yazılım %s", "NOQ SOS komutları\n/durum: kolyenin durumu\n/pil: pil seviyesi\n/yardim: bu liste",
+     "Yazılım %s", "NOQ SOS komutları\n/durum: kolyenin durumu\n/pil: pil seviyesi\n/uyan: 10 dakika uyanık kalsın, sayfası açılsın\n/yardim: bu liste",
      "Kolye uyuyorsa komutu en geç %u dakika içinde cevaplar.",
      "Kolye uyuyorsa komutu düğmeye basılınca ya da günlük yoklamada cevaplar."},
-    {"🔋 Battery: %d%% (%d.%02d V)", "🔋 No battery reading: the battery divider is not fitted.", "📶 Wi-Fi: %s, %s signal (%d dBm)",
+    {"🔋 Battery: %d%% (%d.%02d V)", "🔋 No battery reading: the battery divider is not fitted.",
+     "🔋 Cannot read the battery: D0 reads %d.%02d V, a single cell is 4.2 V at most. Check the 1 MΩ between D0 and GND and its ground.",
+     "📶 Wi-Fi: %s, %s signal (%d dBm)",
      "good", "fair", "weak", "🆘 Last alert: %s, %s", "reached everyone", "did not reach everyone", "🆘 No alert sent yet.",
      "⏳ An alert is waiting to go out; the pendant keeps trying.", "⏰ Daily check-in: %02d:00", "⏰ Daily check-in: off",
      "🕑 While asleep it checks for commands every %u minutes.",
      "🕑 While asleep it checks for commands only on a press and at the check-in.", "Firmware %s",
-     "NOQ SOS commands\n/status: the pendant's status\n/battery: battery level\n/help: this list",
+     "NOQ SOS commands\n/status: the pendant's status\n/battery: battery level\n/wake: stay awake 10 minutes, open its page\n/help: this list",
      "If the pendant is asleep, it answers within %u minutes.",
      "If the pendant is asleep, it answers on the next press or at the daily check-in."},
 };
@@ -322,7 +371,7 @@ static uint8_t parse_cmd(const char *text, const char *bot, uint8_t &lang) {
     uint8_t lang;
   } NAMES[] = {{"durum", CMD_STATUS, 0},  {"status", CMD_STATUS, 1}, {"pil", CMD_BATTERY, 0},  {"battery", CMD_BATTERY, 1},
                {"yardim", CMD_HELP, 0},   {"yardım", CMD_HELP, 0},   {"komutlar", CMD_HELP, 0}, {"help", CMD_HELP, 1},
-               {"commands", CMD_HELP, 1}, {"start", CMD_START, 255}};
+               {"commands", CMD_HELP, 1}, {"start", CMD_START, 255}, {"uyan", CMD_WAKE, 0},  {"wake", CMD_WAKE, 1}};
   for (const auto &n : NAMES) {
     if (name == n.word) {
       lang = n.lang;
@@ -335,10 +384,12 @@ static uint8_t parse_cmd(const char *text, const char *bot, uint8_t &lang) {
 // the "/" menu in Telegram: English for everyone, Turkish for Turkish-language apps (both lists are understood anyway)
 static const char *const MENU_EN =
     "{\"commands\":[{\"command\":\"status\",\"description\":\"The pendant's status\"},"
-    "{\"command\":\"battery\",\"description\":\"Battery level\"},{\"command\":\"help\",\"description\":\"Commands\"}]}";
+    "{\"command\":\"battery\",\"description\":\"Battery level\"},{\"command\":\"wake\",\"description\":\"Stay awake 10 minutes, open its page\"},"
+    "{\"command\":\"help\",\"description\":\"Commands\"}]}";
 static const char *const MENU_TR =
     "{\"commands\":[{\"command\":\"durum\",\"description\":\"Kolyenin durumu\"},"
-    "{\"command\":\"pil\",\"description\":\"Pil seviyesi\"},{\"command\":\"yardim\",\"description\":\"Komutlar\"}],"
+    "{\"command\":\"pil\",\"description\":\"Pil seviyesi\"},{\"command\":\"uyan\",\"description\":\"10 dakika uyanık kalsın, sayfası açılsın\"},"
+    "{\"command\":\"yardim\",\"description\":\"Komutlar\"}],"
     "\"language_code\":\"tr\"}";
 
 // ---- settings -----------------------------------------------------------------------------------------------------
@@ -399,6 +450,16 @@ void NoqSos::setup() {
   this->boot_ms_ = millis();
   this->lock_ = xSemaphoreCreateMutex();
   this->load_settings_();
+  this->battery_load_();
+  if (this->battery_pin_ >= 0) {
+    // this component sets up before Wi-Fi: the cell at rest, not under the radio's current
+    this->battery_rest_mv_ = this->read_battery_mv_();
+    if (this->battery_rest_mv_ > 0) {
+      this->battery_mv_ = this->battery_rest_mv_;
+      this->battery_pct_ = battery_percent(this->battery_rest_mv_);
+      this->battery_read_ = this->boot_ms_ ? this->boot_ms_ : 1;
+    }
+  }
   if (rtc_state.magic != RTC_MAGIC) {
     rtc_state = RtcState{};
     rtc_state.magic = RTC_MAGIC;
@@ -491,7 +552,17 @@ void NoqSos::loop() {
   }
   this->fx_tick_(now);
   this->button_tick_(now);
+  if (this->kesif_until_ != 0 && static_cast<int32_t>(now - this->kesif_until_) >= 0) {
+    this->kesif_until_ = 0;  // the button sends alerts again
+    ESP_LOGI(TAG, "Discovery ended");
+  }
   this->battery_tick_(now);
+  if (this->battery_rest_mv_ > 0 && !this->battery_point_done_ && now - this->boot_ms_ >= 1500 && now_utc() != 0) {
+    this->battery_point_done_ = true;
+    this->battery_wake_(this->battery_rest_mv_);
+    if (!usb_serial_jtag_is_connected() && !this->battery_charging_)
+      this->battery_point_(this->battery_rest_mv_);
+  }
 
   if (this->reboot_at_ != 0 && static_cast<int32_t>(now - this->reboot_at_) >= 0) {
     App.run_safe_shutdown_hooks();
@@ -524,7 +595,7 @@ void NoqSos::loop() {
         this->alert_attempts_++;
         this->start_job_(Job::ALERT);
       } else if (rtc_state.pending == 0 && !this->low_done_ && this->battery_pct_ >= 0 && this->battery_pct_ <= 20 &&
-                 !rtc_state.low_sent) {
+                 !rtc_state.low_sent && !this->battery_charging_) {
         this->low_done_ = true;
         this->start_job_(Job::LOW_BATTERY);
       } else if (rtc_state.pending == 0 && !this->checkin_done_ && this->checkin_due_(now)) {
@@ -550,7 +621,8 @@ void NoqSos::loop() {
     return;  // sleep only once the button is released (a press would wake it at once)
   bool work_left = online && this->configured_() &&
                    ((rtc_state.pending > 0 && this->alert_attempts_ < 3) || this->checkin_due_(now) ||
-                    (!this->low_done_ && this->battery_pct_ >= 0 && this->battery_pct_ <= 20 && !rtc_state.low_sent) ||
+                    (!this->low_done_ && this->battery_pct_ >= 0 && this->battery_pct_ <= 20 && !rtc_state.low_sent &&
+                     !this->battery_charging_) ||
                     (this->mode_ != Mode::AWAKE && !this->poll_done_));
   if (this->mode_ == Mode::AWAKE) {
     if (!this->sleep_now_ && static_cast<int32_t>(now - this->awake_until_) < 0)
@@ -613,6 +685,10 @@ void NoqSos::button_tick_(uint32_t now) {
     if (!this->btn_armed_ || now - this->last_press_ < 3000)
       return;
     this->last_press_ = now;
+    if (this->kesif_until_ != 0) {  // discovery: the press reports the signal here, no alert
+      this->kesif_press_(now);
+      return;
+    }
     this->alert_from_wake_ = false;
     xSemaphoreTake(this->lock_, portMAX_DELAY);
     rtc_state.pending++;
@@ -626,6 +702,28 @@ void NoqSos::button_tick_(uint32_t now) {
   } else if (!down) {
     this->btn_since_ = now;
   }
+}
+
+void NoqSos::kesif_press_(uint32_t now) {
+  auto *wifi = wifi::global_wifi_component;
+  int rssi = wifi->is_connected() ? wifi->wifi_rssi() : 0;
+  if (rssi == 0)
+    this->play_(FX_FAIL, 1);
+  else if (rssi >= -60)
+    this->play_(FX_PRESS, 1);
+  else if (rssi >= -70)
+    this->play_(FX_K2, 3);
+  else
+    this->play_(FX_K3, 5);
+  if (this->kesif_n_ == KESIF_MAX) {
+    for (uint8_t i = 1; i < KESIF_MAX; i++)
+      this->kesif_pts_[i - 1] = this->kesif_pts_[i];
+    this->kesif_n_--;
+  }
+  this->kesif_pts_[this->kesif_n_].utc = now_utc();
+  this->kesif_pts_[this->kesif_n_].rssi = static_cast<int8_t>(std::max(rssi, -127));
+  this->kesif_n_++;
+  ESP_LOGI(TAG, "Discovery spot %u: %d dBm", this->kesif_n_, rssi);
 }
 
 int NoqSos::read_battery_mv_() {
@@ -656,7 +754,7 @@ int NoqSos::read_battery_mv_() {
     this->cali_ = cali;
     this->adc_channel_ = ch;
   }
-  int sum = 0, n = 0;
+  int sum = 0, n = 0, lo = 1 << 30, hi = -1;
   for (int i = 0; i < 8; i++) {
     int raw = 0, mv = 0;
     if (adc_oneshot_read(static_cast<adc_oneshot_unit_handle_t>(this->adc_), static_cast<adc_channel_t>(this->adc_channel_),
@@ -667,22 +765,212 @@ int NoqSos::read_battery_mv_() {
     else
       mv = raw * 3100 / 4095;
     sum += mv;
+    lo = std::min(lo, mv);
+    hi = std::max(hi, mv);
     n++;
   }
   if (n == 0)
     return -1;
   int mv = static_cast<int>(sum / n * this->battery_ratio_);
-  return mv < 2500 ? -1 : mv;  // nothing on the pin: no divider fitted
+  if (mv < 2500)
+    return -1;  // nothing on the pin: no divider fitted
+  // A single cell never reads above ~4.35 V, not even on the charger, and a divider with its 100 nF holds still. Above that,
+  // or wandering, the pin is not seeing the cell (the lower resistor or its ground open, or the divider not connected):
+  // no percentage, no charge, nothing logged.
+  if (mv > BAT_MAX_MV || static_cast<int>((hi - lo) * this->battery_ratio_) > BAT_SPREAD_MV) {
+    this->battery_fault_mv_ = mv;
+    return -2;
+  }
+  this->battery_fault_mv_ = 0;
+  return mv;
 }
 
 void NoqSos::battery_tick_(uint32_t now) {
-  if (this->battery_pin_ < 0 || (this->battery_read_ != 0 && now - this->battery_read_ < 60000))
+  bool power = usb_serial_jtag_is_connected();
+  uint32_t every = (power || this->battery_charging_) ? 15000 : 60000;
+  if (this->battery_pin_ < 0 || (this->battery_read_ != 0 && now - this->battery_read_ < every))
     return;
   if (this->battery_read_ == 0 && now - this->boot_ms_ < 150)
     return;
   this->battery_read_ = now;
-  this->battery_mv_ = this->read_battery_mv_();
-  this->battery_pct_ = this->battery_mv_ < 0 ? -1 : battery_percent(this->battery_mv_);
+  int mv = this->read_battery_mv_();
+  // Charging: on a computer's USB, or the cell keeps rising while awake (a wall charger). The XIAO's charge LED is
+  // not wired to a pin, so this is all the board can know. On its own the cell only falls.
+  if (mv > 0 && this->battery_mv_ > 0) {
+    int d = mv - this->battery_mv_;
+    if (d >= 8 && this->battery_rise_ < 3)
+      this->battery_rise_++;
+    else if (d <= -8)
+      this->battery_rise_ = 0;
+  }
+  this->battery_mv_ = mv;
+  this->battery_pct_ = mv < 0 ? -1 : battery_percent(mv);
+  bool was = this->battery_charging_;
+  this->battery_charging_ = mv > 0 && (power || this->battery_rise_ >= 2);
+  if (!was && this->battery_charging_) {
+    this->battery_charge_since_ = now;
+    this->battery_charge_logged_ = false;
+  }
+  if (this->battery_charging_ && !this->battery_charge_logged_ && mv >= 4170)
+    this->battery_charge_logged_ = this->battery_charged_(true, true);
+  else if (was && !this->battery_charging_ && !this->battery_charge_logged_ && mv > 0 &&
+           now - this->battery_charge_since_ >= 10 * 60 * 1000)
+    this->battery_charge_logged_ = this->battery_charged_(mv >= 4100, true);  // taken off before full
+}
+
+void NoqSos::battery_load_() {
+  BatLog l{};
+  size_t n = sizeof(l);
+  nvs_handle_t h;
+  if (nvs_open(NVS_NS, NVS_READONLY, &h) == ESP_OK) {
+    if (nvs_get_blob(h, "bat", &l, &n) == ESP_OK && n == sizeof(l) && l.magic == BATLOG_MAGIC)
+      this->bat_ = l;
+    nvs_close(h);
+  }
+  bool bozuk = this->bat_.last_mv > BAT_MAX_MV;
+  for (uint8_t i = 0; i < this->bat_.n && i < BAT_POINTS; i++)
+    bozuk = bozuk || this->bat_.pts[i].mv > BAT_MAX_MV;
+  if (this->bat_.magic != BATLOG_MAGIC || bozuk) {  // a log written from impossible readings (charges, days) is not kept
+    this->bat_ = BatLog{};
+    this->bat_.magic = BATLOG_MAGIC;
+    if (bozuk)
+      this->battery_save_();
+  }
+}
+
+void NoqSos::battery_save_() {
+  nvs_handle_t h;
+  if (nvs_open(NVS_NS, NVS_READWRITE, &h) != ESP_OK)
+    return;
+  nvs_set_blob(h, "bat", &this->bat_, sizeof(this->bat_));
+  nvs_commit(h);
+  nvs_close(h);
+}
+
+// A wake-up's rest reading: a jump since the last one means it was charged while asleep (a wall charger).
+void NoqSos::battery_wake_(int mv) {
+  if (this->bat_.last_mv > 0 && mv - this->bat_.last_mv >= 150 && mv >= 3900)
+    this->battery_charged_(mv >= 4100, false);
+}
+
+// At most one point every 6 hours, from an hour after a charge (the surface charge is gone by then).
+void NoqSos::battery_point_(int mv) {
+  BatLog &l = this->bat_;
+  int64_t t = now_utc();
+  if (t == 0 || (l.charged_at != 0 && t - l.charged_at < 3600) || (l.n > 0 && t - l.pts[l.n - 1].t < 6 * 3600))
+    return;
+  if (l.n == BAT_POINTS) {  // full: keep the first point and every other one, so the span still reaches the charge
+    uint8_t j = 1;
+    for (uint8_t i = 2; i < l.n; i += 2)
+      l.pts[j++] = l.pts[i];
+    l.n = j;
+  }
+  l.pts[l.n].t = t;
+  l.pts[l.n].mv = mv;
+  l.n++;
+  l.last_mv = mv;
+  this->battery_save_();
+}
+
+bool NoqSos::battery_charged_(bool full, bool seen) {
+  BatLog &l = this->bat_;
+  int64_t t = now_utc();
+  if (t == 0)
+    return false;
+  if (l.charged_at != 0 && t - l.charged_at < 6 * 3600) {  // the same charge seen again (wake-up, then full)
+    l.full = l.full || full;
+    l.seen = l.seen || seen;
+  } else {
+    if (l.charged_at != 0 && t - l.charged_at >= 12 * 3600) {  // the previous charge lasted until now
+      for (int i = BAT_PAST - 1; i > 0; i--) {
+        l.past_days[i] = l.past_days[i - 1];
+        l.past_end[i] = l.past_end[i - 1];
+      }
+      l.past_days[0] = static_cast<float>(t - l.charged_at) / 86400.0f;
+      l.past_end[0] = static_cast<uint8_t>(battery_percent(l.n ? l.pts[l.n - 1].mv : l.last_mv));
+    }
+    if (l.charges < 65535)
+      l.charges++;
+    l.full = full;
+    l.seen = seen;
+  }
+  l.charged_at = t;
+  l.n = 0;
+  l.last_mv = this->battery_mv_ > 0 ? this->battery_mv_ : l.last_mv;
+  this->battery_save_();
+  ESP_LOGI(TAG, "Battery charged%s (%s), %d mV", full ? " to full" : "", seen ? "seen" : "found on wake-up", this->battery_mv_);
+  return true;
+}
+
+// Days left from the fall of the rest readings since the last charge (least squares, percent against days).
+float NoqSos::battery_days_left_() const {
+  const BatLog &l = this->bat_;
+  if (l.n < 2 || l.pts[l.n - 1].t - l.pts[0].t < 20 * 3600)
+    return -1.0f;
+  double sx = 0, sy = 0, sxx = 0, sxy = 0;
+  for (uint8_t i = 0; i < l.n; i++) {
+    double x = static_cast<double>(l.pts[i].t - l.pts[0].t) / 86400.0, y = battery_percent_f(l.pts[i].mv);
+    sx += x;
+    sy += y;
+    sxx += x * x;
+    sxy += x * y;
+  }
+  double den = l.n * sxx - sx * sx;
+  if (den <= 0)
+    return -1.0f;
+  double slope = (l.n * sxy - sx * sy) / den;  // percent per day, negative while it runs down
+  double pct = battery_percent_f(l.pts[l.n - 1].mv);
+  double left = slope < -0.05 ? pct / -slope : 365.0;
+  int64_t t = now_utc();
+  if (t != 0)
+    left -= static_cast<double>(t - l.pts[l.n - 1].t) / 86400.0;
+  return static_cast<float>(std::min(std::max(left, 0.0), 365.0));
+}
+
+std::string NoqSos::battery_text_(const Settings &c, uint8_t lang) {
+  const CmdTexts &tx = CMD_TEXTS[lang ? 1 : 0];
+  const BatTexts &bt = BAT_TEXTS[lang ? 1 : 0];
+  char b[200];
+  int mv = this->battery_mv_;
+  if (mv == -2) {
+    snprintf(b, sizeof(b), tx.bad_battery, this->battery_fault_mv_ / 1000, this->battery_fault_mv_ % 1000 / 10);
+    return b;
+  }
+  if (mv <= 0)
+    return tx.no_battery;
+  if (this->battery_charging_ && mv >= 4170)
+    snprintf(b, sizeof(b), bt.full, mv / 1000, mv % 1000 / 10);
+  else if (this->battery_charging_)
+    snprintf(b, sizeof(b), bt.charging, this->battery_pct_, mv / 1000, mv % 1000 / 10);
+  else
+    snprintf(b, sizeof(b), tx.battery, this->battery_pct_, mv / 1000, mv % 1000 / 10);
+  std::string o = b;
+  const BatLog &l = this->bat_;
+  if (l.charged_at != 0) {
+    std::string d = day_time(l.charged_at, c.tz_min, bt);
+    if (!l.seen) {
+      snprintf(b, sizeof(b), bt.approx, d.c_str());
+      d = b;
+    }
+    snprintf(b, sizeof(b), bt.last, d.c_str());
+    o += "\n" + std::string(b) + (l.full ? bt.last_full : "");
+  }
+  if (!this->battery_charging_) {
+    float left = this->battery_days_left_();
+    if (left >= 1.5f) {
+      snprintf(b, sizeof(b), bt.left, static_cast<int>(left + 0.5f));
+      o += "\n" + std::string(b);
+    } else if (left >= 0.0f) {
+      o += "\n" + std::string(bt.left_one);
+    } else {
+      o += "\n" + std::string(bt.left_calc);
+    }
+  }
+  if (l.past_days[0] > 0.0f) {
+    snprintf(b, sizeof(b), bt.past, std::max(1, static_cast<int>(l.past_days[0] + 0.5f)));
+    o += "\n" + std::string(b);
+  }
+  return o;
 }
 
 // ---- jobs (worker task) -------------------------------------------------------------------------------------------
@@ -855,11 +1143,21 @@ bool NoqSos::run_broadcast_(const Settings &c, Job job, std::string &msg) {
   bool silent = false;
   if (job == Job::CHECKIN) {
     text = c.name[0] ? with_name(tx.checkin, c.name) : std::string(tx.checkin_anon);
-    if (this->battery_pct_ >= 0)
+    if (this->battery_pct_ >= 0) {
       text += " " + fmt(tx.battery, this->battery_pct_);
+      float left = this->battery_charging_ ? -1.0f : this->battery_days_left_();
+      if (left >= 1.5f)
+        text += fmt(BAT_TEXTS[c.lang ? 1 : 0].checkin_left, static_cast<int>(left + 0.5f));
+    }
     silent = true;
   } else if (job == Job::LOW_BATTERY) {
     text = fmt(with_name(tx.low, c.name).c_str(), std::max(this->battery_pct_, 0));
+    float left = this->battery_days_left_();
+    const BatTexts &bt = BAT_TEXTS[c.lang ? 1 : 0];
+    if (left >= 1.5f)
+      text += "\n" + fmt(bt.left, static_cast<int>(left + 0.5f));
+    else if (left >= 0.0f)
+      text += "\n" + std::string(bt.left_one);
   } else {
     text = with_name(tx.test, c.name);
   }
@@ -1054,14 +1352,16 @@ void NoqSos::poll_updates_(bool setup, int timeout) {
 std::string NoqSos::command_text_(const Settings &c, uint8_t cmd, uint8_t lang) {
   const CmdTexts &tx = CMD_TEXTS[lang ? 1 : 0];
   char b[200];
-  std::string bat;
-  int mv = this->battery_mv_;
-  if (mv > 0) {
-    snprintf(b, sizeof(b), tx.battery, this->battery_pct_, mv / 1000, mv % 1000 / 10);
-    bat = b;
-  } else {
-    bat = tx.no_battery;
+  if (cmd == CMD_WAKE) {
+    // the pendant is wrapped up and RESET is out of reach: this is how its page opens later (battery, people, settings)
+    static const char *const WAKE[2] = {
+        "☀️ Kolye 10 dakika uyanık. Ev Wi-Fi'sindeyken sayfası: http://%s.local\nSayfa açık kaldıkça uyumaz.",
+        "☀️ The pendant is awake for 10 minutes. On the home Wi-Fi its page is http://%s.local\nIt stays awake while the page is open."};
+    this->keep_awake_(10 * 60 * 1000);
+    snprintf(b, sizeof(b), WAKE[lang ? 1 : 0], App.get_name().c_str());
+    return b;
   }
+  std::string bat = this->battery_text_(c, lang);
   if (cmd == CMD_BATTERY)
     return bat;
   if (cmd != CMD_STATUS) {
@@ -1262,10 +1562,49 @@ std::string NoqSos::state_json_() {
   o += "],\"job\":{\"kind\":\"" + std::string(job_name(job)) + "\",\"state\":\"" +
        (busy ? "busy" : job == Job::NONE ? "idle" : ok ? "ok" : "failed") + "\",\"msg\":\"" + jesc(msg.c_str()) + "\"}";
   if (this->battery_mv_ > 0) {
-    snprintf(b, sizeof(b), ",\"battery\":{\"mv\":%d,\"pct\":%d}", this->battery_mv_, this->battery_pct_);
+    const BatLog &l = this->bat_;
+    snprintf(b, sizeof(b), ",\"battery\":{\"mv\":%d,\"pct\":%d,\"charging\":%s,\"full\":%s,\"charges\":%u", this->battery_mv_,
+             this->battery_pct_, this->battery_charging_ ? "true" : "false",
+             this->battery_charging_ && this->battery_mv_ >= 4170 ? "true" : "false", static_cast<unsigned>(l.charges));
+    o += b;
+    if (l.charged_at != 0) {
+      snprintf(b, sizeof(b), ",\"charged_at\":%lld,\"charged_full\":%s,\"charged_seen\":%s", static_cast<long long>(l.charged_at),
+               l.full ? "true" : "false", l.seen ? "true" : "false");
+      o += b;
+    } else {
+      o += ",\"charged_at\":null";
+    }
+    float left = this->battery_charging_ ? -1.0f : this->battery_days_left_();
+    if (left >= 0.0f) {
+      snprintf(b, sizeof(b), ",\"days_left\":%.1f", left);
+      o += b;
+    } else {
+      o += ",\"days_left\":null";
+    }
+    o += ",\"past\":[";
+    for (uint8_t i = 0; i < BAT_PAST && l.past_days[i] > 0.0f; i++) {
+      snprintf(b, sizeof(b), "%s{\"days\":%.1f,\"end\":%u}", i ? "," : "", l.past_days[i], static_cast<unsigned>(l.past_end[i]));
+      o += b;
+    }
+    o += "]}";
+  } else if (this->battery_mv_ == -2) {
+    snprintf(b, sizeof(b), ",\"battery\":{\"fault\":true,\"mv\":%d}", this->battery_fault_mv_);
     o += b;
   } else {
     o += ",\"battery\":null";
+  }
+  if (this->kesif_until_ != 0 || this->kesif_n_ > 0) {
+    uint32_t left = this->kesif_until_ != 0 ? (this->kesif_until_ - millis()) / 1000 : 0;
+    snprintf(b, sizeof(b), ",\"kesif\":{\"left\":%u,\"points\":[", static_cast<unsigned>(left));
+    o += b;
+    for (uint8_t i = 0; i < this->kesif_n_; i++) {
+      snprintf(b, sizeof(b), "%s{\"t\":%lld,\"rssi\":%d}", i ? "," : "", static_cast<long long>(this->kesif_pts_[i].utc),
+               this->kesif_pts_[i].rssi);
+      o += b;
+    }
+    o += "]}";
+  } else {
+    o += ",\"kesif\":null";
   }
   auto *wifi = wifi::global_wifi_component;
   if (wifi->is_connected()) {
@@ -1393,6 +1732,19 @@ void NoqSos::handleRequest(AsyncWebServerRequest *request) {
       return;
     }
     this->send_state_(request, this->start_job_(Job::TOKEN, token) ? 202 : 409);
+    return;
+  }
+  if (url == "/sos/kesif") {
+    if (request->arg("on") == "1") {
+      this->kesif_until_ = millis() + 20 * 60 * 1000;
+      if (this->kesif_until_ == 0)
+        this->kesif_until_ = 1;
+      this->kesif_n_ = 0;
+      this->keep_awake_(20 * 60 * 1000);
+    } else {
+      this->kesif_until_ = 0;
+    }
+    this->send_state_(request);
     return;
   }
   if (url == "/sos/test") {

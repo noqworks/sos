@@ -8,12 +8,46 @@
       kicker: "Cihazın kendi sayfası",
       lede: "Kolyeye basılınca seçtiğin kişilere Telegram'dan bildirim gider. Arada sunucu, uygulama ya da hesap yok: mesajı kolye kendisi gönderir.",
       connecting: "Kolyeye bağlanılıyor…",
-      lost: "Kolyeye ulaşılamıyor. Uykuya geçmiş olabilir: kartın RESET düğmesine bas ya da bilgisayara tak; kurulum için 10 dakika uyanık kalır.",
+      lost: "Kolyeye ulaşılamıyor. Uykuya geçmiş olabilir: Telegram'dan /uyan yaz (bir sonraki bakışında 10 dakika uyanır) ya da USB-C'den bilgisayara tak. Kart açıktaysa RESET düğmesi de olur.",
       awake: "Kurulum açık: bu sayfa açıkken kolye uyumaz.",
       usb: "Bilgisayara bağlı: kolye uyanık kalıyor.",
       pending: "Gönderilmeyi bekleyen bir bildirim var; internet gelince gider.",
       battery: "Pil %{p}",
+      charging: "Şarj oluyor · ≈%{p}",
+      sigGood: "iyi",
+      kesifKicker: "Keşif modu",
+      kesifTitle: "Wi-Fi her köşede yetiyor mu?",
+      kesifHelp: "Kolye yalnız ev Wi-Fi'siyle haber verir; kullanılacağı her yerde sinyal güçlü olmalı. Keşfi başlat, kolyeyle evi dolaş ve her köşede düğmeye bas. Keşif boyunca düğme bildirim göndermez; ışık (takılıysa buzzer) sinyali söyler: bir kısa iyi, iki kısa orta, üç kısa zayıf, bir uzun bağlantı yok. 20 dakika sonra kendiliğinden kapanır, düğme yeniden bildirim gönderir.",
+      kesifStart: "Keşfi başlat",
+      kesifStop: "Keşfi bitir",
+      kesifOn: "Keşif açık: düğme şu an bildirim göndermiyor · {m} dk kaldı.",
+      kesifNow: "Şu an {s}.",
+      kesifOff: "Keşif bitti: düğme yine bildirim gönderiyor.",
+      kesifPoint: "Nokta {n}",
+      kesifNone: "bağlantı yok",
+      sigFair: "orta",
+      sigWeak: "zayıf",
+      full: "Pil dolu",
+      batKicker: "Pil",
+      batTitle: "Şarj ve kalan süre",
+      batNow: "Şimdi",
+      batLast: "Son şarj",
+      batLeft: "Tahmini kalan",
+      batPast: "Önceki şarjlar",
+      batPct: "%{p}",
+      batApprox: "{w} civarı",
+      batToFull: "dolu",
+      batNoCharge: "Henüz kaydedilmedi",
+      batLeftCharging: "Şarjda",
+      batLeftCalc: "İlk günün ölçümlerinden sonra",
+      batLeftOne: "Yaklaşık bir gün",
+      batLeftDays: "Yaklaşık {d} gün",
+      batDays: "{d} gün",
+      batHelp: "Kolye her uyandığında Wi-Fi açılmadan önce pili ölçer. Tahmin bu ölçümlerin düşüş hızından çıkar, pil azaldıkça netleşir. Şarjdayken yüzde yaklaşıktır (≈): şarj akımı gerilimi olduğundan yüksek gösterir.",
       noBattery: "Pil ölçümü yok",
+      batFault: "Pil ölçülemiyor",
+      batFaultNow: "Ölçülemiyor · D0 {v}",
+      batFaultHelp: "Tek hücre LiPo en çok 4,2 V olur; bu okuma pilin değil. D0 ile GND arasındaki 1 MΩ direnci ve GND bağlantısını kontrol et: pil takılıyken D0–GND pilin yarısı olmalı (dolu pilde ~2,1 V). Düzelene kadar yüzde, şarj ve süre gösterilmez.",
       whoKicker: "Kolye kimin",
       whoTitle: "Mesajlarda görünecek ad",
       whoHelp: "Bildirim \"🆘 Ayşe Teyze yardım istiyor!\" gibi gelir.",
@@ -95,12 +129,46 @@
       kicker: "The device's own page",
       lede: "A press on the pendant sends a Telegram alert to the people you choose. No server, app or account in between: the pendant sends the message itself.",
       connecting: "Connecting to the pendant…",
-      lost: "Cannot reach the pendant. It may be asleep: press the board's RESET button or plug it into a computer; it stays awake for 10 minutes of setup.",
+      lost: "Cannot reach the pendant. It may be asleep: send /wake in Telegram (it wakes for 10 minutes at its next check) or plug it into a computer over USB-C. If the board is still open, its RESET button works too.",
       awake: "Setup is open: the pendant stays awake while this page is open.",
       usb: "Connected to a computer: the pendant stays awake.",
       pending: "An alert is waiting to be sent; it goes out once the internet is back.",
       battery: "Battery {p}%",
+      charging: "Charging · ≈{p}%",
+      sigGood: "good",
+      kesifKicker: "Discovery mode",
+      kesifTitle: "Is the Wi-Fi strong in every corner?",
+      kesifHelp: "The pendant can only call through the home Wi-Fi, so the signal must be strong wherever it will be used. Start discovery, walk the house with the pendant and press the button in each spot. During discovery the button sends no alert; the light (and buzzer, if fitted) tells the signal: one short good, two short fair, three short weak, one long no network. It ends by itself after 20 minutes and the button sends alerts again.",
+      kesifStart: "Start discovery",
+      kesifStop: "End discovery",
+      kesifOn: "Discovery on: the button sends no alert right now · {m} min left.",
+      kesifNow: "Now {s}.",
+      kesifOff: "Discovery ended: the button sends alerts again.",
+      kesifPoint: "Spot {n}",
+      kesifNone: "no network",
+      sigFair: "fair",
+      sigWeak: "weak",
+      full: "Battery full",
+      batKicker: "Battery",
+      batTitle: "Charge and time left",
+      batNow: "Now",
+      batLast: "Last charge",
+      batLeft: "Estimated time left",
+      batPast: "Previous charges",
+      batPct: "{p}%",
+      batApprox: "around {w}",
+      batToFull: "full",
+      batNoCharge: "Not recorded yet",
+      batLeftCharging: "Charging",
+      batLeftCalc: "After the first day of readings",
+      batLeftOne: "About a day",
+      batLeftDays: "About {d} days",
+      batDays: "{d} days",
+      batHelp: "Each time the pendant wakes it measures the battery before Wi-Fi starts. The estimate comes from how fast that reading falls and gets sharper as the battery runs down. While charging the percentage is approximate (≈): the charge current makes the voltage read high.",
       noBattery: "No battery reading",
+      batFault: "Cannot read the battery",
+      batFaultNow: "Cannot read · D0 {v}",
+      batFaultHelp: "A single LiPo cell is 4.2 V at most; this reading is not the battery. Check the 1 MΩ between D0 and GND and its ground: with the battery in, D0 to GND should be half the battery (~2.1 V when full). Until then no percentage, charge or time left is shown.",
       whoKicker: "Whose pendant",
       whoTitle: "The name in the messages",
       whoHelp: "Alerts read like \"🆘 Grandma Ann needs help!\".",
@@ -198,6 +266,18 @@
   }
   function show(id, on) { $(id).hidden = !on; }
   function note(id, text) { var el = $(id); el.textContent = text || ""; el.hidden = !text; }
+  var MON = { tr: ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"],
+    en: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] };
+  function two(n) { return (n < 10 ? "0" : "") + n; }
+  // the pendant's local time (its time zone), not the phone's
+  function when(utc) {
+    var d = new Date((utc + ((S && S.tz) || 0) * 60) * 1000);
+    return d.getUTCDate() + " " + MON[lang][d.getUTCMonth()] + " " + two(d.getUTCHours()) + ":" + two(d.getUTCMinutes());
+  }
+  // same thresholds as /status: good from −60 dBm, fair from −70 dBm
+  function sig(r) {
+    return (r >= -60 ? t("sigGood") : r >= -70 ? t("sigFair") : t("sigWeak")) + " (" + String(r).replace("-", "−") + " dBm)";
+  }
   function tzLabel(m) {
     var s = m < 0 ? "−" : "+", a = Math.abs(m), h = Math.floor(a / 60), mm = a % 60;
     return "UTC" + s + h + (mm ? ":" + (mm < 10 ? "0" : "") + mm : "");
@@ -260,10 +340,50 @@
     $("chip-host").textContent = S.host + ".local";
     var bat = $("chip-battery");
     bat.hidden = false;
-    bat.textContent = S.battery ? t("battery", { p: S.battery.pct }) : t("noBattery");
+    var F = S.battery && S.battery.fault ? S.battery : null;   // impossible reading: divider fault, not the cell
+    var B = F ? null : S.battery, chg = !!(B && B.charging && !B.full);
+    bat.classList.toggle("is-none", !B);
+    bat.classList.toggle("is-charging", chg);
+    bat.classList.toggle("is-full", !!(B && B.full));
+    bat.style.setProperty("--np-bat", B ? Math.max(B.pct, 4) / 100 : 0);
+    $("bat-text").textContent = F ? t("batFault") : !B ? t("noBattery") : B.full ? t("full") : chg ? t("charging", { p: B.pct }) : t("battery", { p: B.pct });
+    show("bat-card", !!(B || F));
+    show("bat-fault", !!F);
+    ["bat-last", "bat-left"].forEach(function (id) { $(id).parentElement.hidden = !!F; });
+    show("bat-help", !F);
+    if (F) {
+      $("bat-now").textContent = t("batFaultNow", { v: (F.mv / 1000).toFixed(2).replace(".", lang === "tr" ? "," : ".") + " V" });
+      $("bat-fault").textContent = t("batFaultHelp");
+      show("bat-past-row", false);
+    }
+    if (B) {
+      var volts = (B.mv / 1000).toFixed(2).replace(".", lang === "tr" ? "," : ".") + " V";
+      $("bat-now").textContent = (B.full ? t("full") : chg ? t("charging", { p: B.pct }) : t("batPct", { p: B.pct })) + " · " + volts;
+      var last = B.charged_at ? when(B.charged_at) : "";
+      if (last && !B.charged_seen) last = t("batApprox", { w: last });
+      $("bat-last").textContent = last ? last + (B.charged_full ? " · " + t("batToFull") : "") : t("batNoCharge");
+      $("bat-left").textContent = B.charging ? t("batLeftCharging") : B.days_left === null || B.days_left === undefined ? t("batLeftCalc") :
+        B.days_left < 1.5 ? t("batLeftOne") : t("batLeftDays", { d: Math.round(B.days_left) });
+      var past = (B.past || []).map(function (p) { return t("batDays", { d: Math.max(1, Math.round(p.days)) }); }).join(" · ");
+      show("bat-past-row", !!past);
+      $("bat-past").textContent = past;
+    }
     var wifi = $("chip-wifi");
     wifi.hidden = !S.wifi;
-    if (S.wifi) wifi.textContent = "Wi-Fi · " + S.wifi.ssid;
+    if (S.wifi) wifi.textContent = "Wi-Fi · " + S.wifi.ssid + " · " + sig(S.wifi.rssi);
+
+    var K = S.kesif, kon = !!(K && K.left > 0), pts = (K && K.points) || [];
+    show("kesif-card", true);
+    $("kesif").textContent = kon ? t("kesifStop") : t("kesifStart");
+    $("kesif").setAttribute("aria-pressed", kon ? "true" : "false");
+    note("kesif-live", kon ? t("kesifOn", { m: Math.max(1, Math.ceil(K.left / 60)) }) + (S.wifi ? " " + t("kesifNow", { s: sig(S.wifi.rssi) }) : "") :
+      pts.length ? t("kesifOff") : "");
+    $("kesif-list").hidden = !pts.length;
+    $("kesif-list").innerHTML = pts.map(function (p, i) {
+      var at = p.t ? when(p.t).split(" ").pop() : "";
+      return '<div class="np-set"><div class="np-set-text"><p class="np-set-label">' + esc(t("kesifPoint", { n: i + 1 })) + "</p>" +
+        (at ? '<p class="np-small">' + esc(at) + "</p>" : "") + '</div><span class="np-set-value">' + esc(p.rssi ? sig(p.rssi) : t("kesifNone")) + "</span></div>";
+    }).join("");
     if (!done) $("status").textContent = (S.usb ? t("usb") : t("awake")) + (S.pending ? " " + t("pending") : "");
 
     var name = $("name");
@@ -385,6 +505,9 @@
         return;
       case "wifi-yes":
         post("wifi-reset").then(function () { done = true; $("status").textContent = t("restarting", { host: S.host }); show("wifi-confirm", false); });
+        return;
+      case "kesif":
+        post("kesif", { on: S && S.kesif && S.kesif.left > 0 ? 0 : 1 });
         return;
       case "finish":
         post("sleep").then(function () { done = true; $("status").textContent = t("sleeping"); });

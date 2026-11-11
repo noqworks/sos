@@ -35,6 +35,27 @@ struct Settings {
   uint8_t menu;       // version of the command menu registered with Telegram (setMyCommands)
 };
 
+// Battery log (0.3.0), kept in NVS: the last charge, rest readings since then (at most one per 6 hours, thinned when
+// full) and how long the previous charges lasted. Everything the estimate needs stays on the pendant.
+static constexpr uint8_t BAT_POINTS = 12;
+static constexpr uint8_t BAT_PAST = 3;
+struct BatPoint {
+  int64_t t;  // UTC
+  int32_t mv;
+};
+struct BatLog {
+  uint32_t magic;
+  uint16_t charges;    // charges seen since the log started
+  uint8_t full;        // the last charge reached full
+  uint8_t seen;        // the pendant saw it end; 0 = found on a wake-up (the time is that wake-up)
+  int64_t charged_at;  // UTC of the last charge, 0 = none yet
+  int32_t last_mv;     // last rest reading kept
+  uint8_t n;           // points since the last charge
+  BatPoint pts[BAT_POINTS];
+  float past_days[BAT_PAST];   // how long the previous charges lasted, newest first (0 = none)
+  uint8_t past_end[BAT_PAST];  // percent left when the next charge came
+};
+
 enum class Job : uint8_t { NONE, ALERT, CHECKIN, LOW_BATTERY, TEST, TOKEN, POLL };
 enum class Mode : uint8_t { AWAKE, BUTTON, TIMER };
 
@@ -75,7 +96,15 @@ class NoqSos : public Component, public AsyncWebHandler {
   void fx_tick_(uint32_t now);
   void button_tick_(uint32_t now);
   void battery_tick_(uint32_t now);
+  void battery_load_();
+  void battery_save_();
+  void battery_wake_(int mv);
+  void battery_point_(int mv);
+  bool battery_charged_(bool full, bool seen);
+  float battery_days_left_() const;
+  std::string battery_text_(const Settings &c, uint8_t lang);
   int read_battery_mv_();
+  void kesif_press_(uint32_t now);
 
   bool start_job_(Job job, const std::string &arg = "");
   void finish_job_();
@@ -126,10 +155,29 @@ class NoqSos : public Component, public AsyncWebHandler {
   // battery
   int battery_mv_{-1};
   int battery_pct_{-1};
+  int8_t battery_rise_{0};
+  bool battery_charging_{false};
+  int battery_rest_mv_{-1};  // read in setup(), before Wi-Fi
+  int battery_fault_mv_{0};  // last impossible reading (divider fault), shown instead of a percentage
+  bool battery_point_done_{false};
+  bool battery_charge_logged_{false};
+  uint32_t battery_charge_since_{0};
+  BatLog bat_{};
   uint32_t battery_read_{0};
   void *adc_{nullptr};
   void *cali_{nullptr};
   int adc_channel_{-1};
+
+  // discovery mode (0.3.0): walk the house and press in each spot; the light tells the Wi-Fi signal, no alert goes out.
+  // Opened from the page only, ends by itself after 20 minutes (or on sleep), so the button is never left silenced.
+  static constexpr uint8_t KESIF_MAX = 24;
+  struct KesifPoint {
+    int64_t utc;
+    int8_t rssi;  // 0 = no network
+  };
+  uint32_t kesif_until_{0};
+  uint8_t kesif_n_{0};
+  KesifPoint kesif_pts_[KESIF_MAX]{};
 
   // feedback sequence: even steps on, odd steps off (ms)
   const uint16_t *fx_{nullptr};

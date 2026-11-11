@@ -50,3 +50,18 @@ a.np-btn { text-decoration: none; }
 .np-person .np-link { flex: none; }
 .np-fresh { animation: np-in 600ms var(--ms-ease); }
 @keyframes np-in { from { background: var(--ms-open); } }
+
+/* battery chip: level as a fill; charging fills up again and again in the NOQopen green (still for reduced motion) */
+.np-bat { display: inline-flex; align-items: center; gap: calc(var(--ms-space-unit) * 2); }
+.np-bat-icon { flex: none; width: calc(var(--ms-space-unit) * 6.5); height: calc(var(--ms-space-unit) * 3.25); overflow: visible; }
+.np-bat-case { fill: none; stroke: var(--ms-fg-soft); stroke-width: calc(var(--ms-border-width) * 1.5); }
+.np-bat-tip { fill: var(--ms-fg-soft); }
+.np-bat-fill { fill: var(--ms-fg); transform-box: fill-box; transform-origin: left center; transform: scaleX(var(--np-bat, 0));
+  transition: transform var(--ms-dur) var(--ms-ease), fill var(--ms-dur) var(--ms-ease); }
+.np-bat-bolt { fill: var(--ms-fg); opacity: 0; transition: opacity var(--ms-dur) var(--ms-ease); }
+.np-bat.is-none .np-bat-icon { display: none; }
+.np-bat.is-charging .np-bat-fill, .np-bat.is-full .np-bat-fill { fill: var(--ms-open); }
+.np-bat.is-charging .np-bat-fill { animation: np-charge calc(var(--ms-dur) * 8) var(--ms-ease) infinite; }
+.np-bat.is-charging .np-bat-bolt, .np-bat.is-full .np-bat-bolt { opacity: 1; }
+@keyframes np-charge { from { transform: scaleX(var(--np-bat, 0)); } 80%, to { transform: scaleX(1); } }
+@media (prefers-reduced-motion: reduce) { .np-bat.is-charging .np-bat-fill { animation: none; } }

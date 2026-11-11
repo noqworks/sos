@@ -6,7 +6,7 @@ Tek düğmeli çağrı kolyesi. Basınca aileye Telegram'dan mesaj gider; mesaj�
 
 **Proje sayfası ve tarayıcıdan kurulum:** https://open.noq.works/tr/projeler/sos/ · [English](README.md)
 
-> **Deneme sürümü (0.2.0).** Masada çalışıyor: basış, Wi-Fi, Telegram, komutlar. Pil ölçümü henüz denenmedi ve kutusu henüz yok; ikisi de 0.3.0'da.
+> **Deneme sürümü (0.3.0).** Masada çalışıyor: basış, Wi-Fi, Telegram, komutlar. 0.3.0'da yeni: basılı kutu, pil defteri, /uyan ve keşif modu. Karşılaştığın sorunu issues'a yaz.
 
 ## Ne yapar
 
@@ -57,7 +57,7 @@ Pinleri dosyanın başındaki `substitutions` ile değiştir. Sonraki güncellem
 
 - Güç verildikten, sıfırlandıktan ya da yüklendikten sonra 10 dakika; sayfası açıkken; bilgisayara takılıyken uyanık.
 - Geri kalan zaman uykuda. Basış, bekleyen bir yeniden deneme, günlük yoklama ya da komut bakışı (varsayılan saatte bir) onu uyandırır.
-- Sonradan bir şey değiştirmek için: kartın RESET düğmesine bas (ya da bilgisayara tak) ve sayfasını aç.
+- Sonradan bir şey değiştirmek için: Telegram'dan /uyan yaz (kolye bir sonraki bakışında 10 dakika uyanık kalır) ya da USB-C'den bilgisayara tak ve sayfasını aç. Kart henüz sarılmadıysa RESET düğmesi de olur.
 - Ağı değiştirmek: kolye sayfasında *Ağı değiştir*; Telegram ayarları kalır.
 
 ## Sürümler

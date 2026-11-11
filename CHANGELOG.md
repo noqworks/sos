@@ -10,9 +10,21 @@ All changes to NOQ SOS, newest first. Versions are MAJOR.MINOR.PATCH:
 
 _Generated from `releases.json` by `tools/changelog.py`. Edit that file, not this one._
 
-## Next: 0.3.0
+## Next: 0.4.0
 
 Planned, from requests and questions. Suggest something or tell us what you hit: [issues](https://github.com/noqworks/sos/issues).
+
+### Firmware
+
+- Faster alerts: keep the Telegram connection details across sleep so the secure handshake is shorter.
+
+### Documentation
+
+- Photos of the build and the finished pendant.
+
+## 0.3.0 · 2026-11-11
+
+Printed case, battery log, /wake and discovery mode.
 
 ### Hardware
 
@@ -20,12 +32,18 @@ Planned, from requests and questions. Suggest something or tell us what you hit:
 
 ### Firmware
 
-- Battery reading through the D0 divider, tested on the bench, with the real percentage curve of the cell.
-- Faster alerts: keep the Telegram connection details across sleep so the secure handshake is shorter.
+- Battery log: the cell read before Wi-Fi at every wake, a charge indicator, the last charge, estimated days left and how long the previous charges lasted; on the pendant's page, in /battery and in the check-in. (Umut)
+- An impossible battery reading (above 4.4 V or wandering: the D0 divider’s lower resistor or ground open) is shown as “cannot read” with the voltage and what to check, and no longer makes up a percentage, charges or time left; a log written from such readings is cleared. (Umut)
+- /wake and /uyan: wakes a wrapped-up pendant (RESET out of reach) for 10 minutes and opens its page. (Umut)
+- Discovery mode: started from the pendant's page; for 20 minutes the button sends no alert, each press makes the light tell the Wi-Fi signal and the page lists the spots. (Umut)
 
 ### Documentation
 
-- Photos of the build and the finished pendant.
+- Wiring diagram in Turkish too; the guide explains changing settings later with /wake.
+
+**Compatibility:** Update over Wi-Fi from 0.2.0; the bot, the people and the settings stay. The battery log starts with the first wake after the update. The case fits the XIAO ESP32S3 stack in the README; for another battery or layout change the sizes in hardware/cad/sos_case.py and print it again.
+**Thanks:** Umut
+**Files:** [source and print files (zip)](https://open.noq.works/files/sos/sos-0.3.0-source.zip) · [GitHub release](https://github.com/noqworks/sos/releases/tag/v0.3.0)
 
 ## 0.2.0 · 2026-11-05
 

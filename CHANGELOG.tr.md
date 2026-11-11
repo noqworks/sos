@@ -10,9 +10,21 @@ NOQ SOS için bütün değişiklikler, en yenisi üstte. Sürümler ANA.ARA.YAMA
 
 _`releases.json` dosyasından `tools/changelog.py` ile üretilir. Bu dosyayı değil, onu düzenle._
 
-## Sıradaki: 0.3.0
+## Sıradaki: 0.4.0
 
 Planlananlar; talep ve sorulardan. Önerin ya da takıldığın bir yer varsa: [konular](https://github.com/noqworks/sos/issues).
+
+### Yazılım
+
+- Daha hızlı bildirim: Telegram bağlantı bilgisini uykuda saklayıp şifreli el sıkışmayı kısaltmak.
+
+### Belgeler
+
+- Yapım ve bitmiş kolye fotoğrafları.
+
+## 0.3.0 · 2026-11-11
+
+Basılı kutu, pil defteri, /uyan ve keşif modu.
 
 ### Donanım
 
@@ -20,12 +32,18 @@ Planlananlar; talep ve sorulardan. Önerin ya da takıldığın bir yer varsa: [
 
 ### Yazılım
 
-- D0 bölücüsüyle pil ölçümü, masada denenmiş ve hücrenin gerçek yüzde eğrisiyle.
-- Daha hızlı bildirim: Telegram bağlantı bilgisini uykuda saklayıp şifreli el sıkışmayı kısaltmak.
+- Pil defteri: her uyanışta Wi-Fi'dan önce ölçüm, şarj göstergesi, son şarj tarihi, tahmini kalan gün ve önceki şarjların süresi; kolyenin sayfasında, /pil cevabında ve günlük yoklamada. (Umut)
+- Olanaksız pil okuması (4,4 V üstü ya da oynayan: D0 bölücüsünün alt direnci ya da GND’si açık) “ölçülemiyor” olarak, okunan gerilim ve neyin kontrol edileceğiyle gösterilir; artık sahte yüzde, şarj ve kalan süre üretmez, böyle okumalarla yazılmış kayıt silinir. (Umut)
+- /uyan ve /wake: sarılmış kolyeyi (RESET'e erişilemez) 10 dakika uyandırır, sayfası açılır. (Umut)
+- Keşif modu: kolyenin sayfasından açılır, 20 dakika boyunca düğme bildirim göndermez; her basışta ışık Wi-Fi sinyalini söyler, sayfa noktaları listeler. (Umut)
 
 ### Belgeler
 
-- Yapım ve bitmiş kolye fotoğrafları.
+- Bağlantı şeması Türkçe de var; kılavuz ayarları sonradan /uyan ile değiştirmeyi anlatır.
+
+**Uyumluluk:** 0.2.0'dan Wi-Fi üzerinden güncellenir; bot, kişiler ve ayarlar kalır. Pil defteri güncellemeden sonraki ilk uyanışla başlar. Kutu README'deki XIAO ESP32S3 yığınına göredir; başka pil ya da yerleşimde hardware/cad/sos_case.py'deki ölçüleri değiştirip yeniden bas.
+**Teşekkürler:** Umut
+**Dosyalar:** [kaynak ve baskı dosyaları (zip)](https://open.noq.works/files/sos/sos-0.3.0-source.zip) · [GitHub sürümü](https://github.com/noqworks/sos/releases/tag/v0.3.0)
 
 ## 0.2.0 · 2026-11-05
 

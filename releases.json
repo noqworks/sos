@@ -5,18 +5,8 @@
   "site": "https://open.noq.works/projects/sos/",
   "files": "https://open.noq.works/files/sos/",
   "next": {
-    "version": "0.3.0",
+    "version": "0.4.0",
     "items": [
-      {
-        "area": "hardware",
-        "en": "A printed pendant case: button on the front, USB-C for charging, a loop for the cord.",
-        "tr": "Baskı kolye kutusu: önde düğme, şarj için USB-C, ip için halka."
-      },
-      {
-        "area": "firmware",
-        "en": "Battery reading through the D0 divider, tested on the bench, with the real percentage curve of the cell.",
-        "tr": "D0 bölücüsüyle pil ölçümü, masada denenmiş ve hücrenin gerçek yüzde eğrisiyle."
-      },
       {
         "area": "firmware",
         "en": "Faster alerts: keep the Telegram connection details across sleep so the secure handshake is shorter.",
@@ -30,6 +20,65 @@
     ]
   },
   "releases": [
+    {
+      "version": "0.3.0",
+      "date": "2026-11-11",
+      "summary": {
+        "en": "Printed case, battery log, /wake and discovery mode.",
+        "tr": "Basılı kutu, pil defteri, /uyan ve keşif modu."
+      },
+      "changes": [
+        {
+          "area": "hardware",
+          "en": "A printed pendant case: button on the front, USB-C for charging, a loop for the cord.",
+          "tr": "Baskı kolye kutusu: önde düğme, şarj için USB-C, ip için halka."
+        },
+        {
+          "area": "firmware",
+          "by": [
+            "Umut"
+          ],
+          "en": "Battery log: the cell read before Wi-Fi at every wake, a charge indicator, the last charge, estimated days left and how long the previous charges lasted; on the pendant's page, in /battery and in the check-in.",
+          "tr": "Pil defteri: her uyanışta Wi-Fi'dan önce ölçüm, şarj göstergesi, son şarj tarihi, tahmini kalan gün ve önceki şarjların süresi; kolyenin sayfasında, /pil cevabında ve günlük yoklamada."
+        },
+        {
+          "area": "firmware",
+          "by": [
+            "Umut"
+          ],
+          "en": "An impossible battery reading (above 4.4 V or wandering: the D0 divider’s lower resistor or ground open) is shown as “cannot read” with the voltage and what to check, and no longer makes up a percentage, charges or time left; a log written from such readings is cleared.",
+          "tr": "Olanaksız pil okuması (4,4 V üstü ya da oynayan: D0 bölücüsünün alt direnci ya da GND’si açık) “ölçülemiyor” olarak, okunan gerilim ve neyin kontrol edileceğiyle gösterilir; artık sahte yüzde, şarj ve kalan süre üretmez, böyle okumalarla yazılmış kayıt silinir."
+        },
+        {
+          "area": "firmware",
+          "by": [
+            "Umut"
+          ],
+          "en": "/wake and /uyan: wakes a wrapped-up pendant (RESET out of reach) for 10 minutes and opens its page.",
+          "tr": "/uyan ve /wake: sarılmış kolyeyi (RESET'e erişilemez) 10 dakika uyandırır, sayfası açılır."
+        },
+        {
+          "area": "firmware",
+          "by": [
+            "Umut"
+          ],
+          "en": "Discovery mode: started from the pendant's page; for 20 minutes the button sends no alert, each press makes the light tell the Wi-Fi signal and the page lists the spots.",
+          "tr": "Keşif modu: kolyenin sayfasından açılır, 20 dakika boyunca düğme bildirim göndermez; her basışta ışık Wi-Fi sinyalini söyler, sayfa noktaları listeler."
+        },
+        {
+          "area": "docs",
+          "en": "Wiring diagram in Turkish too; the guide explains changing settings later with /wake.",
+          "tr": "Bağlantı şeması Türkçe de var; kılavuz ayarları sonradan /uyan ile değiştirmeyi anlatır."
+        }
+      ],
+      "compatibility": {
+        "en": "Update over Wi-Fi from 0.2.0; the bot, the people and the settings stay. The battery log starts with the first wake after the update. The case fits the XIAO ESP32S3 stack in the README; for another battery or layout change the sizes in hardware/cad/sos_case.py and print it again.",
+        "tr": "0.2.0'dan Wi-Fi üzerinden güncellenir; bot, kişiler ve ayarlar kalır. Pil defteri güncellemeden sonraki ilk uyanışla başlar. Kutu README'deki XIAO ESP32S3 yığınına göredir; başka pil ya da yerleşimde hardware/cad/sos_case.py'deki ölçüleri değiştirip yeniden bas."
+      },
+      "credits": [
+        "Umut"
+      ]
+    },
     {
       "version": "0.2.0",
       "date": "2026-11-05",

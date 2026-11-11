@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 520" font-family="-apple-system, BlinkMacSystemFont, Inter, system-ui, sans-serif" font-size="14" fill="#1d1d1d">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" font-family="-apple-system, BlinkMacSystemFont, Inter, system-ui, sans-serif" font-size="14" fill="#1d1d1d">
   <title>NOQ SOS wiring</title>
-  <rect width="960" height="520" fill="#ffffff"/>
+  <rect width="960" height="560" fill="#ffffff"/>
 
   <!-- wires -->
   <g fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -24,7 +24,7 @@
     <text x="402" y="264">D3</text><text x="402" y="304" fill="#8a8a8a">D4</text><text x="402" y="344" fill="#8a8a8a">D5</text>
     <text x="402" y="384" fill="#8a8a8a">D6</text>
     <text x="558" y="144" text-anchor="end" fill="#8a8a8a">5V</text><text x="558" y="184" text-anchor="end">GND</text>
-    <text x="558" y="224" text-anchor="end" fill="#8a8a8a">3V3</text><text x="558" y="264" text-anchor="end" fill="#8a8a8a">D10</text>
+    <text x="558" y="224" text-anchor="end">3V3</text><text x="558" y="264" text-anchor="end" fill="#8a8a8a">D10</text>
     <text x="558" y="304" text-anchor="end" fill="#8a8a8a">D9</text><text x="558" y="344" text-anchor="end" fill="#8a8a8a">D8</text>
     <text x="558" y="384" text-anchor="end" fill="#8a8a8a">D7</text>
   </g>
@@ -39,9 +39,9 @@
 
   <!-- battery reading -->
   <rect x="40" y="60" width="260" height="110" rx="16" fill="#f4f4f4"/>
-  <text x="60" y="90" font-weight="600">Battery reading</text><text x="190" y="90" font-size="12" fill="#6b6b6b">optional</text>
+  <text x="60" y="90" font-weight="600">Battery reading</text><text x="280" y="90" text-anchor="end" font-size="12" fill="#6b6b6b">optional</text>
   <text x="60" y="114" font-size="12">BAT+ → 1 MΩ → D0 → 1 MΩ → GND</text>
-  <text x="60" y="134" font-size="12">100 nF from D0 to GND</text>
+  <text x="60" y="134" font-size="12">100 nF (104) ceramic from D0 to GND</text>
   <text x="60" y="154" font-size="12" fill="#6b6b6b">draws about 2 µA</text>
 
   <!-- button -->
@@ -50,16 +50,22 @@
   <text x="60" y="254" font-size="12">one leg → D1</text>
   <text x="60" y="274" font-size="12">diagonal leg → GND, no resistor</text>
 
-  <!-- buzzer -->
-  <rect x="40" y="320" width="260" height="90" rx="16" fill="#f4f4f4"/>
-  <text x="60" y="350" font-weight="600">Buzzer or vibration</text><text x="222" y="350" font-size="12" fill="#6b6b6b">optional</text>
-  <text x="60" y="374" font-size="12">D3 → + , − → GND</text>
-  <text x="60" y="394" font-size="12" fill="#6b6b6b">motor through a transistor</text>
+  <!-- buzzer / vibration motor -->
+  <rect x="40" y="320" width="260" height="220" rx="16" fill="#f4f4f4"/>
+  <text x="60" y="350" font-weight="600">Buzzer or vibration</text><text x="280" y="350" text-anchor="end" font-size="12" fill="#6b6b6b">optional</text>
+  <text x="60" y="374" font-size="12">active buzzer, up to 20 mA:</text>
+  <text x="60" y="394" font-size="12">D3 → + , − → GND</text>
+  <text x="60" y="424" font-size="12" font-weight="600">Vibration motor: never on the pin</text>
+  <text x="60" y="444" font-size="12">D3 → 1 kΩ → NPN base (S8050, 2N2222)</text>
+  <text x="60" y="464" font-size="12">emitter → GND, collector → motor −</text>
+  <text x="60" y="484" font-size="12">motor + → 3V3</text>
+  <text x="60" y="504" font-size="12">1N4148 across the motor, band to 3V3</text>
+  <text x="60" y="524" font-size="12" fill="#6b6b6b">100 kΩ base → GND: no twitch at boot</text>
 
   <!-- ground -->
   <rect x="660" y="90" width="260" height="110" rx="16" fill="#f4f4f4"/>
   <text x="680" y="120" font-weight="600">GND</text>
-  <text x="680" y="144" font-size="12">button, divider and buzzer</text>
+  <text x="680" y="144" font-size="12">button, divider, buzzer and motor</text>
   <text x="680" y="164" font-size="12">all return here</text>
 
   <!-- cell -->

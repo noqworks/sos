@@ -6,7 +6,7 @@ A call pendant with one button. A press sends a Telegram message to the family, 
 
 **Project page and browser installer:** https://open.noq.works/projects/sos/ · [Türkçe](README.tr.md)
 
-> **Test build (0.2.0).** It works on the bench: press, Wi-Fi, Telegram, commands. The battery reading is not tested yet and there is no case yet; both come in 0.3.0.
+> **Test build (0.3.0).** It works on the bench: press, Wi-Fi, Telegram, commands. New in 0.3.0: the printed case, the battery log, /wake and discovery mode. Tell us what you hit in the issues.
 
 ## What it does
 
@@ -57,7 +57,7 @@ Change pins with the `substitutions` at the top of the file. Later updates go ov
 
 - Awake for 10 minutes after power-on, a reset or an install; while its page is open; while it is on a computer.
 - Asleep otherwise. A press, a pending retry, the daily check-in or the command check (every hour by default) wakes it.
-- To change something later: press the board's reset button (or plug it into a computer) and open its page.
+- To change something later: send /wake in Telegram (the pendant stays awake for 10 minutes from its next check) or plug it into a computer over USB-C, then open its page. While the board is not wrapped yet, its RESET button works too.
 - Change network: *Change network* on the pendant's page; the Telegram settings stay.
 
 ## Versions
